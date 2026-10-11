@@ -1,11 +1,13 @@
 import os
 import re
 import secrets
+import json
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
+from urllib.parse import urlparse
 
-from flask import Flask, abort, flash, g, redirect, render_template, request, session, url_for
+from flask import Flask, Response, abort, flash, g, redirect, render_template, request, session, url_for
 from sqlalchemy import create_engine, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -13,8 +15,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from assessment import CATEGORY_LABELS, OBJECTIVE_CATEGORIES, QUESTIONS, calculate_scores, option_label
 from career_recommendations import build_recommendations
-from models import AssessmentAnswer, AssessmentAttempt, Base, RoadmapProgress, StudentProfile, User
+from models import AssessmentAnswer, AssessmentAttempt, Base, Resume, ResumeEntry, RoadmapProgress, StudentProfile, User
 from roadmaps import VALID_PROGRESS_STATUSES, milestones_for, progress_summary, roadmap_for
+from weasyprint import CSS, HTML
+
+
+RESUME_ENTRY_TYPES = ("project", "experience", "certification", "link")
+MAX_RESUME_ENTRIES = 20
 
 
 def create_app(test_config=None):
@@ -445,6 +452,166 @@ def create_app(test_config=None):
         return redirect(url_for("roadmap_detail", career_id=career_id, _anchor="stage-" + next(
             stage["id"] for stage in roadmap["stages"] if any(item["id"] == milestone_id for item in stage["milestones"])
         )))
+
+    def resume_for_user(user_id):
+        return db_session.scalar(select(Resume).where(Resume.user_id == user_id))
+
+    def resume_entries_for_user(resume):
+        if resume is None:
+            return []
+        return db_session.scalars(
+            select(ResumeEntry)
+            .where(ResumeEntry.resume_id == resume.id)
+            .order_by(ResumeEntry.sort_order, ResumeEntry.id)
+        ).all()
+
+    def resume_skills(resume):
+        if resume is None or not resume.skills_json:
+            return []
+        try:
+            skills = json.loads(resume.skills_json)
+        except (TypeError, json.JSONDecodeError):
+            return []
+        return [skill for skill in skills if isinstance(skill, str) and skill.strip()]
+
+    def resume_context():
+        profile = db_session.scalar(select(StudentProfile).where(StudentProfile.user_id == g.user.id))
+        resume = resume_for_user(g.user.id)
+        return {
+            "profile": profile,
+            "resume": resume,
+            "entries": resume_entries_for_user(resume),
+            "skills": resume_skills(resume),
+            "entry_types": RESUME_ENTRY_TYPES,
+        }
+
+    def valid_resume_url(value):
+        parsed = urlparse(value)
+        return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+    @app.route("/resume", methods=("GET", "POST"))
+    @login_required
+    @csrf_protected
+    def resume_builder():
+        if request.method == "POST":
+            headline = request.form.get("headline", "").strip()
+            phone = request.form.get("phone", "").strip()
+            location = request.form.get("location", "").strip()
+            professional_summary = request.form.get("professional_summary", "").strip()
+            skills_value = request.form.get("skills", "").strip()
+            errors = []
+            for value, label, maximum in (
+                (headline, "Headline", 160),
+                (phone, "Phone number", 50),
+                (location, "Location", 160),
+                (professional_summary, "Professional summary", 2000),
+                (skills_value, "Skills", 1000),
+            ):
+                if len(value) > maximum:
+                    errors.append(f"{label} must be {maximum} characters or fewer.")
+
+            skills = []
+            if skills_value:
+                for skill in skills_value.replace("\n", ",").split(","):
+                    skill = skill.strip()
+                    if skill and skill.casefold() not in {item.casefold() for item in skills}:
+                        skills.append(skill)
+                if len(skills) > 30 or any(len(skill) > 80 for skill in skills):
+                    errors.append("Add up to 30 skills, with no skill longer than 80 characters.")
+
+            entry_fields = {
+                "entry_type": request.form.getlist("entry_type"),
+                "entry_title": request.form.getlist("entry_title"),
+                "entry_organization": request.form.getlist("entry_organization"),
+                "entry_dates": request.form.getlist("entry_dates"),
+                "entry_description": request.form.getlist("entry_description"),
+                "entry_url": request.form.getlist("entry_url"),
+            }
+            lengths = {len(values) for values in entry_fields.values()}
+            if len(lengths) != 1:
+                errors.append("Resume entry data is incomplete. Please try again.")
+            elif len(entry_fields["entry_type"]) > MAX_RESUME_ENTRIES:
+                errors.append(f"Add no more than {MAX_RESUME_ENTRIES} resume entries.")
+
+            entries = []
+            if not errors:
+                for values in zip(*entry_fields.values()):
+                    entry_type, title, organization, date_range, description, entry_url = (value.strip() for value in values)
+                    if not any((title, organization, date_range, description, entry_url)):
+                        continue
+                    if entry_type not in RESUME_ENTRY_TYPES:
+                        errors.append("Choose a valid resume entry type.")
+                        continue
+                    if not title:
+                        errors.append("Each resume entry needs a title.")
+                    if entry_type == "link" and not entry_url:
+                        errors.append("Each link entry needs a URL.")
+                    if entry_url and not valid_resume_url(entry_url):
+                        errors.append("Resume links must use a valid http:// or https:// URL.")
+                    for value, label, maximum in (
+                        (title, "Entry title", 160),
+                        (organization, "Organization", 160),
+                        (date_range, "Date range", 80),
+                        (description, "Entry description", 2000),
+                        (entry_url, "Entry URL", 500),
+                    ):
+                        if len(value) > maximum:
+                            errors.append(f"{label} must be {maximum} characters or fewer.")
+                    entries.append({
+                        "entry_type": entry_type, "title": title, "organization": organization,
+                        "date_range": date_range, "description": description, "url": entry_url,
+                    })
+                if len(entries) > MAX_RESUME_ENTRIES:
+                    errors.append(f"Add no more than {MAX_RESUME_ENTRIES} resume entries.")
+
+            if errors:
+                for error in dict.fromkeys(errors):
+                    flash(error, "error")
+                return render_template("resume/builder.html", **resume_context()), 400
+
+            resume = resume_for_user(g.user.id)
+            if resume is None:
+                resume = Resume(user_id=g.user.id)
+                db_session.add(resume)
+                db_session.flush()
+            resume.headline = headline or None
+            resume.phone = phone or None
+            resume.location = location or None
+            resume.professional_summary = professional_summary or None
+            resume.skills_json = json.dumps(skills) if skills else None
+            for entry in resume_entries_for_user(resume):
+                db_session.delete(entry)
+            for position, entry in enumerate(entries):
+                db_session.add(ResumeEntry(resume_id=resume.id, sort_order=position, **{
+                    key: value or None for key, value in entry.items()
+                }))
+            db_session.commit()
+            flash("Your resume has been saved.", "success")
+            return redirect(url_for("resume_builder"))
+
+        return render_template("resume/builder.html", **resume_context())
+
+    @app.get("/resume/preview")
+    @login_required
+    def resume_preview():
+        return render_template("resume/preview.html", preview_mode=True, pdf_mode=False, **resume_context())
+
+    @app.get("/resume/download")
+    @login_required
+    def download_resume():
+        context = resume_context()
+        if context["resume"] is None:
+            flash("Save your resume before downloading a PDF.", "error")
+            return redirect(url_for("resume_builder"))
+        document = render_template("resume/preview.html", preview_mode=False, pdf_mode=True, **context)
+        pdf = HTML(string=document).write_pdf(
+            stylesheets=[CSS(filename=str(Path(app.static_folder) / "css" / "resume.css"))]
+        )
+        return Response(
+            pdf,
+            mimetype="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=skillbridge-resume.pdf"},
+        )
 
     @app.route("/profile", methods=("GET", "POST"))
     @login_required

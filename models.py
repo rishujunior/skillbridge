@@ -113,3 +113,43 @@ class RoadmapProgress(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc), nullable=False,
     )
+
+
+class Resume(Base):
+    __tablename__ = "resumes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    headline: Mapped[str | None] = mapped_column(String(160))
+    phone: Mapped[str | None] = mapped_column(String(50))
+    location: Mapped[str | None] = mapped_column(String(160))
+    professional_summary: Mapped[str | None] = mapped_column(Text)
+    skills_json: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc), nullable=False,
+    )
+
+
+class ResumeEntry(Base):
+    __tablename__ = "resume_entries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    resume_id: Mapped[int] = mapped_column(ForeignKey("resumes.id"), nullable=False, index=True)
+    entry_type: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    organization: Mapped[str | None] = mapped_column(String(160))
+    date_range: Mapped[str | None] = mapped_column(String(80))
+    description: Mapped[str | None] = mapped_column(Text)
+    url: Mapped[str | None] = mapped_column(String(500))
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc), nullable=False,
+    )

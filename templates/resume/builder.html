@@ -1,0 +1,84 @@
+{% extends "auth/base.html" %}
+{% block title %}Resume Builder — SkillBridge{% endblock %}
+{% block content %}
+<section class="resume-builder-shell" aria-labelledby="resume-builder-title">
+    <div class="resume-builder-intro">
+        <div>
+            <p class="eyebrow"><span></span>Resume Builder</p>
+            <h1 id="resume-builder-title">Build a resume that is clear and yours.</h1>
+            <p>Your saved profile supplies available identity and education details. Add only experience and skills you can stand behind.</p>
+        </div>
+        <div class="resume-builder-intro__actions">
+            <a class="button button--secondary" href="{{ url_for('resume_preview') }}" target="_blank">Preview resume <span aria-hidden="true">↗</span></a>
+            {% if resume %}<a class="text-action" href="{{ url_for('download_resume') }}">Download PDF <span aria-hidden="true">↓</span></a>{% endif %}
+        </div>
+    </div>
+
+    {% if not profile or not profile.degree or not profile.college %}
+        <aside class="resume-profile-notice" aria-labelledby="profile-notice-title">
+            <span aria-hidden="true">✦</span>
+            <div><h2 id="profile-notice-title">Your profile has a few gaps.</h2><p>Missing profile details are left off the resume. Complete your profile when you have information to add.</p></div>
+            <a class="text-action" href="{{ url_for('profile') }}">Update profile <span aria-hidden="true">→</span></a>
+        </aside>
+    {% endif %}
+
+    <form class="resume-builder-form" action="{{ url_for('resume_builder') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <section class="resume-editor-section" aria-labelledby="resume-profile-title">
+            <div class="resume-editor-section__heading"><p class="card-label">From your profile</p><h2 id="resume-profile-title">Personal and education details</h2><p>These details remain in your SkillBridge profile, so changes belong there.</p></div>
+            <div class="resume-prefill-grid">
+                <div><span>Name</span><strong>{{ g.user.name }}</strong></div>
+                <div><span>Email</span><strong>{{ g.user.email }}</strong></div>
+                <div><span>Education</span><strong>{% if profile and (profile.degree or profile.branch) %}{{ profile.degree or '' }}{% if profile.degree and profile.branch %} · {% endif %}{{ profile.branch or '' }}{% else %}Not added yet{% endif %}</strong></div>
+                <div><span>Institution</span><strong>{{ profile.college if profile and profile.college else 'Not added yet' }}</strong></div>
+            </div>
+        </section>
+
+        <section class="resume-editor-section" aria-labelledby="resume-summary-title">
+            <div class="resume-editor-section__heading"><p class="card-label">Your introduction</p><h2 id="resume-summary-title">Professional summary and skills</h2></div>
+            <div class="resume-form-grid">
+                <div class="form-field"><label for="headline">Headline</label><input id="headline" name="headline" maxlength="160" value="{{ resume.headline if resume else (profile.career_goal if profile else '') }}" placeholder="e.g., Entry-level software developer"></div>
+                <div class="form-field"><label for="phone">Phone</label><input id="phone" name="phone" maxlength="50" value="{{ resume.phone if resume else '' }}" autocomplete="tel" placeholder="Optional contact number"></div>
+                <div class="form-field form-field--full"><label for="location">Location</label><input id="location" name="location" maxlength="160" value="{{ resume.location if resume else '' }}" autocomplete="address-level2" placeholder="City, region, or remote"></div>
+                <div class="form-field form-field--full"><label for="professional_summary">Professional summary</label><textarea id="professional_summary" name="professional_summary" maxlength="2000" rows="5" placeholder="Write a concise introduction based on your real goals, skills, and experience.">{{ resume.professional_summary if resume else (profile.bio if profile else '') }}</textarea><small class="field-help">Profile bio is used as a starting point until you save a resume-specific summary.</small></div>
+                <div class="form-field form-field--full"><label for="skills">Skills</label><textarea id="skills" name="skills" maxlength="1000" rows="3" placeholder="Python, problem solving, accessibility, SQL">{{ skills|join(', ') if resume else (profile.career_interests if profile else '') }}</textarea><small class="field-help">Separate up to 30 real skills with commas. Profile interests are only a starting point.</small></div>
+            </div>
+        </section>
+
+        <section class="resume-editor-section resume-editor-section--last" aria-labelledby="resume-entries-title">
+            <div class="resume-editor-section__heading resume-editor-section__heading--with-action"><div><p class="card-label">Your evidence</p><h2 id="resume-entries-title">Projects, experience, certifications, and links</h2><p>Add items in the order you want them to appear on the resume.</p></div><button class="button button--secondary" type="button" data-add-resume-entry>Add entry <span aria-hidden="true">+</span></button></div>
+            <div class="resume-entry-list" data-resume-entry-list>
+                {% for entry in entries or [none] %}
+                    <fieldset class="resume-entry-card" data-resume-entry>
+                        <legend>Resume entry <span class="resume-entry-card__number">{{ loop.index }}</span></legend>
+                        <button class="resume-entry-card__remove" type="button" data-remove-resume-entry aria-label="Remove resume entry {{ loop.index }}">Remove</button>
+                        <div class="resume-form-grid">
+                            <div class="form-field"><label>Type<select name="entry_type">{% for entry_type in entry_types %}<option value="{{ entry_type }}" {% if entry and entry.entry_type == entry_type %}selected{% endif %}>{{ entry_type|title }}</option>{% endfor %}</select></label></div>
+                            <div class="form-field"><label>Title<input name="entry_title" maxlength="160" value="{{ entry.title if entry else '' }}" placeholder="Project, role, certificate, or link title"></label></div>
+                            <div class="form-field"><label>Organization or issuer<input name="entry_organization" maxlength="160" value="{{ entry.organization if entry and entry.organization else '' }}" placeholder="Optional"></label></div>
+                            <div class="form-field"><label>Date range<input name="entry_dates" maxlength="80" value="{{ entry.date_range if entry and entry.date_range else '' }}" placeholder="e.g., Jan 2026 – Present"></label></div>
+                            <div class="form-field form-field--full"><label>Description<textarea name="entry_description" maxlength="2000" rows="4" placeholder="Describe your contribution, outcome, or what you learned.">{{ entry.description if entry and entry.description else '' }}</textarea></label></div>
+                            <div class="form-field form-field--full"><label>URL<input name="entry_url" type="url" maxlength="500" value="{{ entry.url if entry and entry.url else '' }}" placeholder="https://example.com"></label><small class="field-help">Required for link entries; optional for the other types.</small></div>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </div>
+            <template id="resume-entry-template">
+                <fieldset class="resume-entry-card" data-resume-entry>
+                    <legend>Resume entry <span class="resume-entry-card__number"></span></legend>
+                    <button class="resume-entry-card__remove" type="button" data-remove-resume-entry>Remove</button>
+                    <div class="resume-form-grid">
+                        <div class="form-field"><label>Type<select name="entry_type">{% for entry_type in entry_types %}<option value="{{ entry_type }}">{{ entry_type|title }}</option>{% endfor %}</select></label></div>
+                        <div class="form-field"><label>Title<input name="entry_title" maxlength="160" placeholder="Project, role, certificate, or link title"></label></div>
+                        <div class="form-field"><label>Organization or issuer<input name="entry_organization" maxlength="160" placeholder="Optional"></label></div>
+                        <div class="form-field"><label>Date range<input name="entry_dates" maxlength="80" placeholder="e.g., Jan 2026 – Present"></label></div>
+                        <div class="form-field form-field--full"><label>Description<textarea name="entry_description" maxlength="2000" rows="4" placeholder="Describe your contribution, outcome, or what you learned."></textarea></label></div>
+                        <div class="form-field form-field--full"><label>URL<input name="entry_url" type="url" maxlength="500" placeholder="https://example.com"></label><small class="field-help">Required for link entries; optional for the other types.</small></div>
+                    </div>
+                </fieldset>
+            </template>
+        </section>
+        <div class="resume-builder-form__actions"><p>Save before downloading a PDF. Your profile information is never changed here.</p><button class="button" type="submit">Save resume <span aria-hidden="true">→</span></button></div>
+    </form>
+</section>
+{% endblock %}

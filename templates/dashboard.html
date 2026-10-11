@@ -8,7 +8,10 @@
             <h1 id="dashboard-title">Welcome, {{ g.user.name }}.</h1>
             <p>See your real progress, then choose the next step that moves your learning forward.</p>
         </div>
-        <a class="button" href="{{ url_for('profile') }}">{% if profile %}Edit profile{% else %}Build your profile{% endif %} <span aria-hidden="true">→</span></a>
+        <div class="dashboard-intro__actions">
+            <a class="button" href="{{ url_for('profile') }}">{% if profile %}Edit profile{% else %}Build your profile{% endif %} <span aria-hidden="true">→</span></a>
+            <a class="text-action" href="{{ url_for('resume_builder') }}">Build your resume <span aria-hidden="true">→</span></a>
+        </div>
     </div>
 
     <div class="dashboard-overview-grid" aria-label="Your SkillBridge overview">

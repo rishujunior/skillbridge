@@ -20,6 +20,7 @@
                 <a class="sidebar-link {% if endpoint in ('assessment_question', 'assessment_results') %}is-active{% endif %}" href="{{ url_for('dashboard', _anchor='skill-assessment') }}"><span class="sidebar-icon" aria-hidden="true">✦</span><span>Skill Assessment</span></a>
                 <a class="sidebar-link {% if endpoint == 'career_recommendations' %}is-active{% endif %}" href="{{ url_for('career_recommendations') }}"><span class="sidebar-icon" aria-hidden="true">↗</span><span>Career Matches</span></a>
                 <a class="sidebar-link {% if endpoint in ('roadmaps', 'roadmap_detail') %}is-active{% endif %}" href="{{ url_for('roadmaps') }}"><span class="sidebar-icon" aria-hidden="true">▤</span><span>Learning Roadmaps</span></a>
+                <a class="sidebar-link {% if endpoint in ('resume_builder', 'resume_preview', 'download_resume') %}is-active{% endif %}" href="{{ url_for('resume_builder') }}"><span class="sidebar-icon" aria-hidden="true">▧</span><span>Resume Builder</span></a>
             </nav>
             <div class="sidebar-account">
                 <span class="sidebar-avatar" aria-hidden="true">{{ g.user.name[0]|upper }}</span>
@@ -65,5 +66,6 @@
     <script src="{{ url_for('static', filename='js/notifications.js') }}" defer></script>
     {% if g.user %}<script src="{{ url_for('static', filename='js/sidebar.js') }}" defer></script>{% endif %}
     {% if request.endpoint == 'profile' %}<script src="{{ url_for('static', filename='js/profile-suggestions.js') }}" defer></script>{% endif %}
+    {% if request.endpoint == 'resume_builder' %}<script src="{{ url_for('static', filename='js/resume-builder.js') }}" defer></script>{% endif %}
 </body>
 </html>

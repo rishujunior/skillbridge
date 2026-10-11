@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ g.user.name }} — Resume</title>
+    {% if not pdf_mode %}<link rel="stylesheet" href="{{ url_for('static', filename='css/resume.css') }}">{% endif %}
+</head>
+<body class="resume-document-page">
+    {% if preview_mode %}
+        <header class="resume-preview-toolbar" aria-label="Resume preview controls">
+            <a href="{{ url_for('resume_builder') }}">← Back to builder</a>
+            <div><button type="button" onclick="window.print()">Print</button>{% if resume %}<a href="{{ url_for('download_resume') }}">Download PDF</a>{% endif %}</div>
+        </header>
+    {% endif %}
+    <main class="resume-document">
+        <header class="resume-document__header">
+            <h1>{{ g.user.name }}</h1>
+            {% set headline = resume.headline if resume else (profile.career_goal if profile else none) %}
+            {% if headline %}<p class="resume-document__headline">{{ headline }}</p>{% endif %}
+            <ul class="resume-document__contact">
+                <li>{{ g.user.email }}</li>
+                {% if resume and resume.phone %}<li>{{ resume.phone }}</li>{% endif %}
+                {% if resume and resume.location %}<li>{{ resume.location }}</li>{% endif %}
+            </ul>
+        </header>
+
+        {% set summary = resume.professional_summary if resume else (profile.bio if profile else none) %}
+        {% if summary %}<section class="resume-document__section"><h2>Profile</h2><p>{{ summary }}</p></section>{% endif %}
+
+        {% if skills or (not resume and profile and profile.career_interests) %}
+            <section class="resume-document__section"><h2>Skills</h2><ul class="resume-document__skills">{% if skills %}{% for skill in skills %}<li>{{ skill }}</li>{% endfor %}{% else %}{% for skill in profile.career_interests.split(',') if skill.strip() %}<li>{{ skill.strip() }}</li>{% endfor %}{% endif %}</ul></section>
+        {% endif %}
+
+        {% if profile and (profile.degree or profile.branch or profile.college) %}
+            <section class="resume-document__section"><h2>Education</h2><article class="resume-document__entry"><div><h3>{{ profile.degree or profile.branch }}{% if profile.degree and profile.branch %} — {{ profile.branch }}{% endif %}</h3>{% if profile.college %}<p class="resume-document__organization">{{ profile.college }}</p>{% endif %}</div>{% if profile.graduation_year %}<p class="resume-document__dates">Expected {{ profile.graduation_year }}</p>{% endif %}</article></section>
+        {% endif %}
+
+        {% for entry_type, label in [('experience', 'Experience'), ('project', 'Projects'), ('certification', 'Certifications'), ('link', 'Links')] %}
+            {% set section_entries = entries|selectattr('entry_type', 'equalto', entry_type)|list %}
+            {% if section_entries %}
+                <section class="resume-document__section"><h2>{{ label }}</h2>{% for entry in section_entries %}<article class="resume-document__entry"><div><h3>{% if entry.url %}<a href="{{ entry.url }}">{{ entry.title }}</a>{% else %}{{ entry.title }}{% endif %}</h3>{% if entry.organization %}<p class="resume-document__organization">{{ entry.organization }}</p>{% endif %}</div>{% if entry.date_range %}<p class="resume-document__dates">{{ entry.date_range }}</p>{% endif %}{% if entry.description %}<p class="resume-document__description">{{ entry.description }}</p>{% endif %}</article>{% endfor %}</section>
+            {% endif %}
+        {% endfor %}
+
+        {% if not resume and not profile %}<section class="resume-document__section"><h2>Resume in progress</h2><p>Add profile details or save resume content in SkillBridge to build your document.</p></section>{% endif %}
+    </main>
+</body>
+</html>
