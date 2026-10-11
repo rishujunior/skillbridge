@@ -240,6 +240,76 @@ def create_app(test_config=None):
             active_roadmap=active_roadmap,
         )
 
+    def valid_completed_assessment(attempt):
+        if attempt.completed_at is None:
+            return False
+        scores = (
+            attempt.programming_score,
+            attempt.logical_reasoning_score,
+            attempt.problem_solving_score,
+            attempt.analytical_thinking_score,
+            attempt.overall_score,
+        )
+        return all(isinstance(score, int) and not isinstance(score, bool) and 0 <= score <= 100 for score in scores)
+
+    @app.get("/analytics")
+    @login_required
+    def analytics():
+        completed_attempts = db_session.scalars(
+            select(AssessmentAttempt)
+            .where(
+                AssessmentAttempt.user_id == g.user.id,
+                AssessmentAttempt.status == "completed",
+            )
+            .order_by(AssessmentAttempt.completed_at.desc(), AssessmentAttempt.id.desc())
+        ).all()
+        valid_attempts = [attempt for attempt in completed_attempts if valid_completed_assessment(attempt)]
+        assessment_history = valid_attempts[:10]
+        latest_attempt = valid_attempts[0] if valid_attempts else None
+        previous_attempt = valid_attempts[1] if len(valid_attempts) > 1 else None
+        score_change = (
+            latest_attempt.overall_score - previous_attempt.overall_score
+            if latest_attempt and previous_attempt else None
+        )
+        category_scores = (
+            tuple({"key": category, "label": CATEGORY_LABELS[category], "score": getattr(latest_attempt, f"{category}_score")}
+                  for category in OBJECTIVE_CATEGORIES)
+            if latest_attempt else ()
+        )
+
+        progress_rows = db_session.scalars(
+            select(RoadmapProgress)
+            .where(RoadmapProgress.user_id == g.user.id)
+            .order_by(RoadmapProgress.updated_at.desc(), RoadmapProgress.id.desc())
+        ).all()
+        statuses_by_career = {}
+        for row in progress_rows:
+            roadmap = roadmap_for(row.career_id)
+            if roadmap is None or row.status not in VALID_PROGRESS_STATUSES:
+                continue
+            valid_milestones = {item["id"] for item in milestones_for(roadmap)}
+            if row.milestone_id not in valid_milestones:
+                continue
+            statuses_by_career.setdefault(row.career_id, {}).setdefault(row.milestone_id, row.status)
+        roadmap_summaries = tuple(
+            {
+                "id": career_id,
+                "name": roadmap_for(career_id)["career_name"],
+                "summary": progress_summary(roadmap_for(career_id), statuses),
+            }
+            for career_id, statuses in statuses_by_career.items()
+        )
+        return render_template(
+            "analytics.html",
+            latest_attempt=latest_attempt,
+            previous_attempt=previous_attempt,
+            score_change=score_change,
+            category_scores=category_scores,
+            assessment_history=assessment_history,
+            assessment_data_issue=bool(completed_attempts) and not valid_attempts,
+            roadmap_summaries=roadmap_summaries,
+        )
+
     def owned_attempt(attempt_id, require_in_progress=False):
         attempt = db_session.get(AssessmentAttempt, attempt_id)
         if attempt is None or attempt.user_id != g.user.id:

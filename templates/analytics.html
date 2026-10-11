@@ -1,0 +1,88 @@
+{% extends "auth/base.html" %}
+{% block title %}Progress Analytics — SkillBridge{% endblock %}
+{% block content %}
+<section class="analytics-shell" aria-labelledby="analytics-title">
+    <div class="analytics-intro">
+        <div>
+            <p class="eyebrow"><span></span>Student Progress Analytics</p>
+            <h1 id="analytics-title">Progress, grounded in your saved work.</h1>
+            <p>These summaries use completed assessments and saved roadmap milestones only. They do not estimate time, streaks, or future outcomes.</p>
+        </div>
+        <a class="text-action" href="{{ url_for('dashboard') }}">Back to dashboard <span aria-hidden="true">→</span></a>
+    </div>
+
+    <section class="analytics-section" aria-labelledby="assessment-analytics-title">
+        <div class="analytics-section__heading">
+            <div><p class="card-label">Assessment progress</p><h2 id="assessment-analytics-title">Your completed assessment record.</h2></div>
+            {% if latest_attempt %}<a class="text-action" href="{{ url_for('assessment_results', attempt_id=latest_attempt.id) }}">View latest results <span aria-hidden="true">→</span></a>{% endif %}
+        </div>
+        {% if latest_attempt %}
+            <div class="analytics-score-overview">
+                <article class="analytics-overall-card">
+                    <p class="card-label">Latest overall score</p>
+                    <strong>{{ latest_attempt.overall_score }}%</strong>
+                    <p>Completed {{ latest_attempt.completed_at.strftime('%d %b %Y') }}.</p>
+                </article>
+                <article class="analytics-comparison-card">
+                    <p class="card-label">Change from previous assessment</p>
+                    {% if previous_attempt %}
+                        <strong class="{% if score_change > 0 %}is-positive{% elif score_change < 0 %}is-negative{% endif %}">{% if score_change > 0 %}+{% endif %}{{ score_change }} points</strong>
+                        <p>Compared with the previous valid completed assessment from {{ previous_attempt.completed_at.strftime('%d %b %Y') }} ({{ previous_attempt.overall_score }}%).</p>
+                    {% else %}
+                        <strong>—</strong>
+                        <p>Complete another assessment to compare it with this saved result.</p>
+                    {% endif %}
+                </article>
+            </div>
+
+            <section class="analytics-category-panel" aria-labelledby="category-scores-title">
+                <div><p class="card-label">Latest category scores</p><h3 id="category-scores-title">Objective assessment categories</h3><p>Each score is the saved result from the existing SkillBridge assessment.</p></div>
+                <div class="analytics-category-grid">
+                    {% for category in category_scores %}
+                        <article class="analytics-category-card">
+                            <div><h4>{{ category.label }}</h4><strong>{{ category.score }}%</strong></div>
+                            <div class="analytics-score-track" role="img" aria-label="{{ category.label }}: {{ category.score }}%"><span style="width: {{ category.score }}%"></span></div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="analytics-history-panel" aria-labelledby="assessment-history-title">
+                <div class="analytics-history-panel__heading"><div><p class="card-label">History</p><h3 id="assessment-history-title">Recent valid completed assessments</h3></div><p>Showing up to 10 saved records, newest first.</p></div>
+                <div class="analytics-table-wrap" tabindex="0">
+                    <table>
+                        <caption class="sr-only">Your 10 most recent valid completed SkillBridge assessments</caption>
+                        <thead><tr><th scope="col">Completed</th><th scope="col">Overall score</th><th scope="col">Programming</th><th scope="col">Logical reasoning</th><th scope="col">Problem-solving</th><th scope="col">Analytical thinking</th></tr></thead>
+                        <tbody>{% for attempt in assessment_history %}<tr><td>{{ attempt.completed_at.strftime('%d %b %Y') }}</td><td><strong>{{ attempt.overall_score }}%</strong></td><td>{{ attempt.programming_score }}%</td><td>{{ attempt.logical_reasoning_score }}%</td><td>{{ attempt.problem_solving_score }}%</td><td>{{ attempt.analytical_thinking_score }}%</td></tr>{% endfor %}</tbody>
+                    </table>
+                </div>
+            </section>
+        {% else %}
+            <div class="analytics-empty-state">
+                <span class="card-mark" aria-hidden="true">↗</span>
+                <div><h3>{% if assessment_data_issue %}Assessment data is unavailable{% else %}No completed assessment yet{% endif %}</h3><p>{% if assessment_data_issue %}Saved completed attempts do not contain valid scores, so SkillBridge cannot show numerical analytics from them.{% else %}Complete the SkillBridge assessment to see saved objective category scores and future comparisons here.{% endif %}</p></div>
+                <form action="{{ url_for('start_assessment') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--secondary" type="submit">{% if assessment_data_issue %}Retake assessment{% else %}Start assessment{% endif %}</button></form>
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="analytics-section analytics-roadmaps" aria-labelledby="roadmap-analytics-title">
+        <div class="analytics-section__heading"><div><p class="card-label">Learning roadmap progress</p><h2 id="roadmap-analytics-title">Milestones you have saved.</h2></div><a class="text-action" href="{{ url_for('roadmaps') }}">View learning roadmaps <span aria-hidden="true">→</span></a></div>
+        {% if roadmap_summaries %}
+            <div class="analytics-roadmap-grid">
+                {% for roadmap in roadmap_summaries %}
+                    <article class="analytics-roadmap-card">
+                        <p class="card-label">{{ roadmap.name }}</p>
+                        <div><strong>{{ roadmap.summary.percentage }}%</strong><span>complete</span></div>
+                        <div class="completion-track" aria-label="{{ roadmap.name }} is {{ roadmap.summary.percentage }}% complete"><span style="width: {{ roadmap.summary.percentage }}%"></span></div>
+                        <p>{{ roadmap.summary.completed }} of {{ roadmap.summary.total }} milestones completed.</p>
+                        <a class="text-action" href="{{ url_for('roadmaps') }}">Review roadmap <span aria-hidden="true">→</span></a>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="analytics-empty-state analytics-empty-state--compact"><span class="card-mark" aria-hidden="true">⌁</span><div><h3>No roadmap progress yet</h3><p>When you save a milestone status, its actual completion progress will appear here.</p></div>{% if latest_attempt %}<a class="button button--secondary" href="{{ url_for('roadmaps') }}">Choose a roadmap</a>{% else %}<a class="button button--secondary" href="{{ url_for('dashboard', _anchor='skill-assessment') }}">Complete assessment</a>{% endif %}</div>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}

@@ -22,6 +22,7 @@
                 <a class="sidebar-link {% if endpoint in ('roadmaps', 'roadmap_detail') %}is-active{% endif %}" href="{{ url_for('roadmaps') }}"><span class="sidebar-icon" aria-hidden="true">▤</span><span>Learning Roadmaps</span></a>
                 <a class="sidebar-link {% if endpoint in ('resume_builder', 'resume_preview', 'download_resume') %}is-active{% endif %}" href="{{ url_for('resume_builder') }}"><span class="sidebar-icon" aria-hidden="true">▧</span><span>Resume Builder</span></a>
                 <a class="sidebar-link {% if endpoint in ('projects', 'create_project', 'edit_project', 'delete_project') %}is-active{% endif %}" href="{{ url_for('projects') }}"><span class="sidebar-icon" aria-hidden="true">▦</span><span>Project Portfolio</span></a>
+                <a class="sidebar-link {% if endpoint == 'analytics' %}is-active{% endif %}" href="{{ url_for('analytics') }}"><span class="sidebar-icon" aria-hidden="true">▥</span><span>Progress Analytics</span></a>
             </nav>
             <div class="sidebar-account">
                 <span class="sidebar-avatar" aria-hidden="true">{{ g.user.name[0]|upper }}</span>
