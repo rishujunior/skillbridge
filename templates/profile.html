@@ -1,0 +1,100 @@
+{% extends "auth/base.html" %}
+{% block title %}Your profile — SkillBridge{% endblock %}
+{% block content %}
+<section class="profile-editor" aria-labelledby="profile-title">
+    <div class="profile-editor__intro">
+        <p class="eyebrow"><span></span>Your profile</p>
+        <h1 id="profile-title">Tell us where you are headed.</h1>
+        <p>These details help you keep your learning and career goals in view. You can update them at any time.</p>
+    </div>
+    <form class="profile-form profile-form--premium" method="post" action="{{ url_for('profile') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <section class="profile-section" aria-labelledby="education-section-title">
+            <div class="profile-section__heading">
+                <span class="profile-section__number" aria-hidden="true">01</span>
+                <div><p class="card-label">Academic context</p><h2 id="education-section-title">Education</h2><p>Share the learning path you are currently on. Suggestions are optional.</p></div>
+            </div>
+            <div class="profile-form__grid">
+                <div class="form-field">
+                    <label for="education_level">Education level</label>
+                    <select id="education_level" name="education_level">
+                        <option value="">Select your level</option>
+                        {% for level in ['High school', 'Diploma', 'Undergraduate', 'Postgraduate', 'Other'] %}
+                            <option value="{{ level }}" {% if request.form.get('education_level', profile.education_level if profile else '') == level %}selected{% endif %}>{{ level }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="graduation_year">Graduation year <span>Optional</span></label>
+                    <input id="graduation_year" name="graduation_year" type="number" min="1900" max="2100" inputmode="numeric" aria-describedby="graduation-year-help" value="{{ request.form.get('graduation_year', profile.graduation_year if profile and profile.graduation_year else '') }}">
+                    <small id="graduation-year-help" class="field-help">Use the year you expect to finish.</small>
+                </div>
+                <div class="form-field form-field--full">
+                    <label for="college">College or university <span>Optional</span></label>
+                    <input id="college" name="college" type="text" maxlength="160" autocomplete="organization" value="{{ request.form.get('college', profile.college if profile and profile.college else '') }}">
+                </div>
+                <div class="form-field">
+                    <label for="degree">Degree <span>Suggestions are optional</span></label>
+                    <input id="degree" name="degree" type="text" list="degree-suggestions" maxlength="120" autocomplete="off" aria-describedby="degree-help" value="{{ request.form.get('degree', profile.degree if profile and profile.degree else '') }}">
+                    <small id="degree-help" class="field-help">Choose a suggestion or enter your own degree.</small>
+                </div>
+                <div class="form-field">
+                    <label for="branch">Branch or area of study <span>Suggestions adapt to degree</span></label>
+                    <input id="branch" name="branch" type="text" list="branch-suggestions" maxlength="120" autocomplete="off" aria-describedby="branch-help" value="{{ request.form.get('branch', profile.branch if profile and profile.branch else '') }}">
+                    <small id="branch-help" class="field-help">Your current entry is always kept; suggestions never replace it.</small>
+                </div>
+            </div>
+        </section>
+
+        <section class="profile-section" aria-labelledby="career-section-title">
+            <div class="profile-section__heading">
+                <span class="profile-section__number" aria-hidden="true">02</span>
+                <div><p class="card-label">Your direction</p><h2 id="career-section-title">Career preferences</h2><p>Use your own words, or start from a suggestion and tailor it.</p></div>
+            </div>
+            <div class="profile-form__grid">
+                <div class="form-field form-field--full">
+                    <label for="career_goal">Career goal <span>Suggestions are optional</span></label>
+                    <input id="career_goal" name="career_goal" type="text" list="career-goal-suggestions" maxlength="160" autocomplete="off" placeholder="e.g. Frontend Developer" value="{{ request.form.get('career_goal', profile.career_goal if profile and profile.career_goal else '') }}">
+                </div>
+                <div class="form-field form-field--full">
+                    <label for="career_interests">Career interests <span>Stored as comma-separated interests</span></label>
+                    <input id="career_interests" name="career_interests" type="text" list="interest-suggestions" maxlength="500" autocomplete="off" placeholder="e.g. Accessibility, product design, web development" aria-describedby="interests-help" value="{{ request.form.get('career_interests', profile.career_interests if profile and profile.career_interests else '') }}">
+                    <small id="interests-help" class="field-help">Select quick interests below or type any interests of your own.</small>
+                    <div class="interest-chip-group" aria-label="Quick career-interest suggestions">
+                        {% for interest in ['Web Development', 'Mobile Apps', 'Accessibility', 'Product Design', 'Data Analytics', 'Artificial Intelligence', 'Cybersecurity', 'Cloud Computing', 'Game Development', 'Quality Assurance'] %}
+                            <button class="interest-chip" type="button" data-interest="{{ interest }}" aria-label="Add {{ interest }} to career interests">+ {{ interest }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="profile-section profile-section--last" aria-labelledby="about-section-title">
+            <div class="profile-section__heading">
+                <span class="profile-section__number" aria-hidden="true">03</span>
+                <div><p class="card-label">A little context</p><h2 id="about-section-title">About you</h2><p>Describe what you are learning, interested in, or working toward.</p></div>
+            </div>
+            <div class="profile-form__grid">
+                <div class="form-field form-field--full">
+                    <label for="bio">A short bio <span>600 characters maximum</span></label>
+                    <textarea id="bio" name="bio" maxlength="600" rows="5" placeholder="What are you learning, interested in, or hoping to do next?">{{ request.form.get('bio', profile.bio if profile and profile.bio else '') }}</textarea>
+                </div>
+            </div>
+        </section>
+        <datalist id="degree-suggestions">
+            {% for degree_option in ['B.Tech / B.E.', 'BCA', 'MCA', 'B.Sc.', 'M.Sc.', 'BBA', 'MBA', 'BA', 'MA', 'B.Com.', 'M.Com.', 'Diploma', 'Other'] %}<option value="{{ degree_option }}">{% endfor %}
+        </datalist>
+        <datalist id="branch-suggestions"></datalist>
+        <datalist id="career-goal-suggestions">
+            {% for goal in ['Frontend Developer', 'Backend Developer', 'Full-Stack Developer', 'MERN Stack Developer', 'Python Developer', 'Java Developer', 'Software Engineer', 'Mobile App Developer', 'Data Analyst', 'Data Scientist', 'Data Engineer', 'AI/ML Engineer', 'Cybersecurity Analyst', 'Cloud Engineer', 'DevOps Engineer', 'UI/UX Designer', 'Game Developer', 'QA / Test Engineer', 'Business Analyst', 'Product Manager', 'Other'] %}<option value="{{ goal }}">{% endfor %}
+        </datalist>
+        <datalist id="interest-suggestions">
+            {% for interest in ['Web Development', 'Mobile Apps', 'Accessibility', 'Product Design', 'Data Analytics', 'Artificial Intelligence', 'Cybersecurity', 'Cloud Computing', 'Game Development', 'Quality Assurance', 'Software Engineering', 'Business Strategy'] %}<option value="{{ interest }}">{% endfor %}
+        </datalist>
+        <div class="profile-form__actions">
+            <div><p class="profile-save-note">You can revisit and update these details whenever your direction changes.</p><a class="text-action" href="{{ url_for('dashboard') }}">Back to dashboard</a></div>
+            <button class="button profile-save-button" type="submit">Save profile <span aria-hidden="true">→</span></button>
+        </div>
+    </form>
+</section>
+{% endblock %}

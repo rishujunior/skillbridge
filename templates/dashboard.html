@@ -1,0 +1,187 @@
+{% extends "auth/base.html" %}
+{% block title %}Your dashboard — SkillBridge{% endblock %}
+{% block content %}
+<section class="dashboard-shell" aria-labelledby="dashboard-title">
+    <div class="dashboard-intro">
+        <div>
+            <p class="eyebrow"><span></span>Your dashboard</p>
+            <h1 id="dashboard-title">Welcome, {{ g.user.name }}.</h1>
+            <p>See your real progress, then choose the next step that moves your learning forward.</p>
+        </div>
+        <a class="button" href="{{ url_for('profile') }}">{% if profile %}Edit profile{% else %}Build your profile{% endif %} <span aria-hidden="true">→</span></a>
+    </div>
+
+    <div class="dashboard-overview-grid" aria-label="Your SkillBridge overview">
+        <article class="dashboard-card dashboard-overview-card completion-card">
+            <p class="card-label">Profile completion</p>
+            <div class="completion-value"><strong>{{ completion }}%</strong><span>complete</span></div>
+            <div class="completion-track" aria-label="Profile {{ completion }}% complete"><span style="width: {{ completion }}%"></span></div>
+            {% if completion < 100 %}
+                <p>{% if profile %}Add the remaining details to make your profile more complete.{% else %}Start with your education, interests, and career goal.{% endif %}</p>
+            {% else %}
+                <p>Your profile is complete and ready for the next SkillBridge milestone.</p>
+            {% endif %}
+            <a class="text-action" href="{{ url_for('profile') }}">{% if profile %}Review profile{% else %}Complete profile{% endif %} <span aria-hidden="true">→</span></a>
+        </article>
+        <article class="dashboard-card dashboard-overview-card assessment-card" id="skill-assessment">
+            <span class="card-mark" aria-hidden="true">↗</span>
+            <p class="card-label">Skill assessment</p>
+            {% if in_progress_attempt %}
+                <h2>Continue your assessment</h2>
+                <p>Your answers are saved as you go. Return when you are ready to finish.</p>
+                {% if latest_completed_score is not none %}<p class="dashboard-supporting-stat">Last completed score: <strong>{{ latest_completed_score }}%</strong></p>{% endif %}
+                <a class="button button--secondary" href="{{ url_for('assessment_question', attempt_id=in_progress_attempt.id, position=1) }}">Continue assessment <span aria-hidden="true">→</span></a>
+            {% elif assessment_data_issue %}
+                <h2>Assessment results unavailable</h2>
+                <p>This completed attempt has incomplete or invalid score data, so SkillBridge cannot calculate results or matches from it.</p>
+                <form action="{{ url_for('start_assessment') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="button button--secondary" type="submit">Retake assessment <span aria-hidden="true">→</span></button>
+                </form>
+            {% elif latest_completed_attempt %}
+                <h2>Assessment complete</h2>
+                <p>Your latest initial self-evaluation is ready to review.{% if latest_completed_score is not none %} Overall score: <strong>{{ latest_completed_score }}%</strong>.{% endif %}</p>
+                <div class="assessment-card__actions">
+                    <a class="text-action" href="{{ url_for('assessment_results', attempt_id=latest_completed_attempt.id) }}">View results <span aria-hidden="true">→</span></a>
+                    <a class="text-action" href="{{ url_for('career_recommendations') }}">Explore career matches <span aria-hidden="true">→</span></a>
+                    <a class="text-action" href="{{ url_for('roadmaps') }}">View learning roadmaps <span aria-hidden="true">→</span></a>
+                    <form action="{{ url_for('start_assessment') }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="button button--secondary" type="submit">Start again</button>
+                    </form>
+                </div>
+            {% else %}
+                <h2>No assessment yet</h2>
+                <p>Answer 15 short questions on foundations, reasoning, and your interests. It takes about five minutes.</p>
+                <form action="{{ url_for('start_assessment') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="button button--secondary" type="submit">Start assessment <span aria-hidden="true">→</span></button>
+                </form>
+            {% endif %}
+        </article>
+        <article class="dashboard-card dashboard-overview-card roadmap-status-card">
+            <span class="card-mark" aria-hidden="true">⌁</span>
+            <p class="card-label">Learning roadmap</p>
+            {% if active_roadmap %}
+                <h2>{{ active_roadmap.name }}</h2>
+                <div class="completion-value completion-value--compact"><strong>{{ active_roadmap.summary.percentage }}%</strong><span>complete</span></div>
+                <div class="completion-track" aria-label="{{ active_roadmap.name }} is {{ active_roadmap.summary.percentage }}% complete"><span style="width: {{ active_roadmap.summary.percentage }}%"></span></div>
+                <p>{{ active_roadmap.summary.completed }} of {{ active_roadmap.summary.total }} milestones completed.</p>
+                {% if active_roadmap.is_available %}
+                    <a class="text-action" href="{{ url_for('roadmap_detail', career_id=active_roadmap.id) }}">Continue roadmap <span aria-hidden="true">→</span></a>
+                {% else %}
+                    <form action="{{ url_for('start_assessment') }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="text-button" type="submit">Retake assessment <span aria-hidden="true">→</span></button>
+                    </form>
+                {% endif %}
+            {% else %}
+                <h2>No roadmap activity yet</h2>
+                <p>Choose a career roadmap after your assessment to begin tracking real milestone progress.</p>
+                {% if recommendations %}
+                    <a class="text-action" href="{{ url_for('roadmaps') }}">Choose a roadmap <span aria-hidden="true">→</span></a>
+                {% elif assessment_data_issue %}
+                    <form action="{{ url_for('start_assessment') }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="text-button" type="submit">Retake assessment <span aria-hidden="true">→</span></button>
+                    </form>
+                {% else %}
+                    <form action="{{ url_for('start_assessment') }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="text-button" type="submit">Start assessment <span aria-hidden="true">→</span></button>
+                    </form>
+                {% endif %}
+            {% endif %}
+        </article>
+    </div>
+
+    <section class="dashboard-matches" aria-labelledby="career-matches-title">
+        <div class="section-row">
+            <div>
+                <p class="eyebrow"><span></span>Career matches</p>
+                <h2 id="career-matches-title">Your strongest rule-based alignments.</h2>
+            </div>
+            {% if recommendations %}<a class="text-action" href="{{ url_for('career_recommendations') }}">View all matches <span aria-hidden="true">→</span></a>{% endif %}
+        </div>
+        {% if top_recommendations %}
+            <div class="dashboard-match-grid">
+                {% for recommendation in top_recommendations %}
+                    <article class="dashboard-match-card">
+                        <div class="dashboard-match-card__score"><strong>{{ recommendation.match_score }}%</strong><span>match</span></div>
+                        <h3>{{ recommendation.name }}</h3>
+                        <p>{{ recommendation.description }}</p>
+                        <p class="dashboard-match-card__reason">
+                            {% if recommendation.strengths %}
+                                {{ recommendation.strengths[0].label }} scored {{ recommendation.strengths[0].score }}% in your objective assessment.
+                            {% elif recommendation.interest_matches %}
+                                {{ recommendation.interest_matches }} of {{ recommendation.interest_total }} saved interest responses align with this path.
+                            {% else %}
+                                This match is calculated from your saved assessment results and interest responses.
+                            {% endif %}
+                        </p>
+                        <a class="text-action" href="{{ url_for('roadmap_detail', career_id=recommendation.id) }}">Open roadmap <span aria-hidden="true">→</span></a>
+                    </article>
+                {% endfor %}
+            </div>
+            <p class="dashboard-disclaimer">Match percentages reflect the published SkillBridge rules and your latest assessment; they are not predictions of career success.</p>
+        {% elif assessment_data_issue %}
+            <div class="dashboard-empty-state">
+                <div><h3>Career matches are unavailable</h3><p>Your latest completed attempt cannot be used for recommendations until you retake the assessment.</p></div>
+                <form action="{{ url_for('start_assessment') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--secondary" type="submit">Retake assessment</button></form>
+            </div>
+        {% else %}
+            <div class="dashboard-empty-state">
+                <div><h3>Complete an assessment to see career matches.</h3><p>SkillBridge will only show matches calculated from your saved assessment responses.</p></div>
+                {% if in_progress_attempt %}<a class="button button--secondary" href="{{ url_for('assessment_question', attempt_id=in_progress_attempt.id, position=1) }}">Continue assessment</a>{% else %}<form action="{{ url_for('start_assessment') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button--secondary" type="submit">Start assessment</button></form>{% endif %}
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="profile-summary" aria-labelledby="profile-summary-title">
+        <div class="section-row">
+            <div>
+                <p class="eyebrow"><span></span>Your profile</p>
+                <h2 id="profile-summary-title">The details that shape your direction.</h2>
+            </div>
+            <a class="text-action" href="{{ url_for('profile') }}">{% if profile %}Edit details{% else %}Add details{% endif %} <span aria-hidden="true">→</span></a>
+        </div>
+
+        {% if profile %}
+            <div class="detail-grid">
+                <article class="detail-card">
+                    <p class="card-label">Education</p>
+                    <h3>{{ profile.degree or 'Education details not added' }}</h3>
+                    <p>
+                        {% if profile.branch %}{{ profile.branch }}{% endif %}
+                        {% if profile.branch and profile.college %}<span> · </span>{% endif %}
+                        {% if profile.college %}{{ profile.college }}{% endif %}
+                    </p>
+                    {% if profile.education_level or profile.graduation_year %}
+                        <small>{{ profile.education_level or 'Education level not added' }}{% if profile.graduation_year %} · Class of {{ profile.graduation_year }}{% endif %}</small>
+                    {% endif %}
+                </article>
+                <article class="detail-card">
+                    <p class="card-label">Career goal</p>
+                    <h3>{{ profile.career_goal or 'Career goal not added' }}</h3>
+                    <p>{{ profile.bio or 'Add a short bio to share what motivates your next step.' }}</p>
+                </article>
+                <article class="detail-card">
+                    <p class="card-label">Career interests</p>
+                    <h3>{{ profile.career_interests or 'Interests not added' }}</h3>
+                    <p>Use interests to capture the fields, work, or problems you would like to explore.</p>
+                </article>
+            </div>
+        {% else %}
+            <div class="profile-empty">
+                <span class="card-mark" aria-hidden="true">✦</span>
+                <div>
+                    <h3>Your profile starts here.</h3>
+                    <p>Add your education, interests, and career goal. It takes only a few minutes and makes your dashboard more useful.</p>
+                </div>
+                <a class="button button--secondary" href="{{ url_for('profile') }}">Complete profile</a>
+            </div>
+        {% endif %}
+    </section>
+
+</section>
+{% endblock %}

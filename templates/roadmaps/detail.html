@@ -1,0 +1,53 @@
+{% extends "auth/base.html" %}
+{% block title %}{{ roadmap.career_name }} roadmap — SkillBridge{% endblock %}
+{% block content %}
+<section class="roadmap-detail-shell" aria-labelledby="roadmap-title">
+    <div class="roadmap-detail-intro">
+        <p class="eyebrow"><span></span>Personal learning roadmap</p>
+        <h1 id="roadmap-title">{{ roadmap.career_name }}</h1>
+        <p>Your current match is <strong>{{ recommendation.match_score }}%</strong>. This roadmap is guidance for practical learning, not a guarantee of employment.</p>
+    </div>
+    <section class="roadmap-overview" aria-label="Roadmap completion">
+        <div><p class="card-label">Overall completion</p><strong>{{ summary.percentage }}%</strong><span>{{ summary.completed }} of {{ summary.total }} milestones completed</span></div>
+        <div class="completion-track" aria-label="Overall roadmap completion: {{ summary.percentage }}%"><span style="width: {{ summary.percentage }}%"></span></div>
+    </section>
+    <nav class="roadmap-stage-nav" aria-label="Roadmap stages">
+        {% for stage in summary.stages %}<a href="#stage-{{ stage.id }}">{{ stage.name }} · {{ stage.percentage }}%</a>{% endfor %}
+    </nav>
+    {% for stage in summary.stages %}
+        <section class="roadmap-stage" id="stage-{{ stage.id }}" aria-labelledby="{{ stage.id }}-title">
+            <div class="roadmap-stage__heading">
+                <div><p class="eyebrow"><span></span>Stage {{ loop.index }}</p><h2 id="{{ stage.id }}-title">{{ stage.name }}</h2></div>
+                <div class="stage-progress"><strong>{{ stage.percentage }}%</strong><span>{{ stage.completed }}/{{ stage.total }} completed</span></div>
+            </div>
+            <div class="completion-track" aria-label="{{ stage.name }} completion: {{ stage.percentage }}%"><span style="width: {{ stage.percentage }}%"></span></div>
+            <div class="roadmap-milestones">
+                {% for milestone in stage.milestones %}
+                    {% set current_status = statuses.get(milestone.id, 'not_started') %}
+                    <article class="roadmap-milestone">
+                        <div class="roadmap-milestone__body">
+                            <p class="card-label">Milestone {{ loop.index }}</p>
+                            <h3>{{ milestone.topic }}</h3>
+                            <p>{{ milestone.description }}</p>
+                            <p class="milestone-criterion"><strong>Completion task:</strong> {{ milestone.criterion }}</p>
+                            {% if milestone.prerequisites %}<p class="milestone-prerequisites"><strong>Prerequisites:</strong> {{ milestone.prerequisites|join(', ') }}</p>{% endif %}
+                            <ul class="milestone-resources" aria-label="Learning resources">
+                                {% for resource in milestone.resources %}<li><a href="{{ resource.url }}" target="_blank" rel="noopener noreferrer">{{ resource.title }} <span aria-hidden="true">↗</span></a></li>{% endfor %}
+                            </ul>
+                        </div>
+                        <form class="milestone-progress-form" method="post" action="{{ url_for('update_roadmap_progress', career_id=recommendation.id, milestone_id=milestone.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <label for="status-{{ milestone.id }}">Progress for {{ milestone.topic }}</label>
+                            <select id="status-{{ milestone.id }}" name="status">
+                                {% for status in valid_statuses %}<option value="{{ status }}" {% if current_status == status %}selected{% endif %}>{{ status.replace('_', ' ').title() }}</option>{% endfor %}
+                            </select>
+                            <button class="button button--secondary" type="submit">Save progress</button>
+                        </form>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    {% endfor %}
+    <div class="results-actions"><a class="text-action" href="{{ url_for('roadmaps') }}">Choose another roadmap</a><a class="text-action" href="{{ url_for('career_recommendations') }}">Back to career matches</a><a class="text-action" href="{{ url_for('dashboard') }}">Back to dashboard</a></div>
+</section>
+{% endblock %}

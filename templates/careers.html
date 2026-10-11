@@ -1,0 +1,96 @@
+{% extends "auth/base.html" %}
+{% block title %}Career matches — SkillBridge{% endblock %}
+{% block content %}
+<section class="careers-shell" aria-labelledby="careers-title">
+    <div class="careers-intro">
+        <p class="eyebrow"><span></span>Career matches</p>
+        <h1 id="careers-title">Explore directions that fit your current snapshot.</h1>
+        <p>Match percentages show alignment with SkillBridge's published rules, not a probability of career success or a professional career assessment.</p>
+    </div>
+
+    {% if not attempt %}
+        <section class="career-empty" aria-labelledby="assessment-needed-title">
+            <span class="card-mark" aria-hidden="true">↗</span>
+            <div>
+                <h2 id="assessment-needed-title">Complete an assessment first.</h2>
+                <p>Career matches need a completed SkillBridge assessment. We will not estimate technical scores without one.</p>
+            </div>
+            <form action="{{ url_for('start_assessment') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="button" type="submit">Start assessment <span aria-hidden="true">→</span></button>
+            </form>
+        </section>
+    {% elif data_issue %}
+        <section class="career-empty" aria-labelledby="data-issue-title">
+            <span class="card-mark" aria-hidden="true">!</span>
+            <div>
+                <h2 id="data-issue-title">This assessment cannot be used yet.</h2>
+                <p>Some saved assessment data is incomplete or invalid, so no career matches have been calculated. Start a new assessment to create a complete snapshot.</p>
+            </div>
+            <form action="{{ url_for('start_assessment') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="button" type="submit">Start a new assessment <span aria-hidden="true">→</span></button>
+            </form>
+        </section>
+    {% else %}
+        <aside class="career-context" aria-label="Profile context">
+            {% if profile and (profile.career_goal or profile.career_interests) %}
+                <p><strong>Your profile context:</strong> {% if profile.career_goal %}Goal: {{ profile.career_goal }}.{% endif %}{% if profile.career_interests %} Interests: {{ profile.career_interests }}.{% endif %}</p>
+                <p>Profile details provide context for your reflection; they do not change the match percentages.</p>
+            {% else %}
+                <p><strong>Recommendations are provisional.</strong> Add a career goal or interests to your profile for more context alongside these assessment-based matches. Profile information does not change the match percentages.</p>
+                <a class="text-action" href="{{ url_for('profile') }}">Complete profile context <span aria-hidden="true">→</span></a>
+            {% endif %}
+        </aside>
+
+        <section class="career-rules" aria-labelledby="career-rules-title">
+            <p class="eyebrow"><span></span>How matching works</p>
+            <h2 id="career-rules-title">Published rules, not hidden predictions.</h2>
+            <p>Every path has its own relevant assessment-category weights. Its objective fit is 80% of the final score. Alignment with the three self-reported interest answers is the remaining 20%. Interest alignment is a preference signal only, never evidence of skill. Scores are rounded to whole percentages and ranked by score, then name for ties.</p>
+        </section>
+
+        <section class="career-grid" aria-label="Ranked career matches">
+            {% for recommendation in recommendations %}
+                <article class="career-card">
+                    <div class="career-card__heading">
+                        <div>
+                            <p class="card-label">Match {{ loop.index }}</p>
+                            <h2>{{ recommendation.name }}</h2>
+                        </div>
+                        <strong class="career-score">{{ recommendation.match_score }}%</strong>
+                    </div>
+                    <p class="career-description">{{ recommendation.description }}</p>
+                    <div class="career-fit-breakdown">
+                        <span>Objective fit {{ recommendation.objective_fit }}%</span>
+                        <span>Interest alignment {{ recommendation.interest_fit }}%</span>
+                    </div>
+                    <p class="career-weights">Relevant objective weights: {% for weight in recommendation.skill_weights %}{{ weight.label }} {{ weight.percentage }}%{% if not loop.last %}, {% endif %}{% endfor %}.</p>
+                    <div class="completion-track" aria-label="{{ recommendation.name }} match: {{ recommendation.match_score }}%"><span style="width: {{ recommendation.match_score }}%"></span></div>
+
+                    <div class="career-card__details">
+                        <section>
+                            <h3>Why it may fit</h3>
+                            <ul>{% for reason in recommendation.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>
+                        </section>
+                        <section>
+                            <h3>Skills to develop</h3>
+                            {% if recommendation.skill_gaps %}
+                                <ul>{% for gap in recommendation.skill_gaps %}<li><strong>{{ gap.label }} ({{ gap.score }}%)</strong> — {{ gap.suggestion }}</li>{% endfor %}</ul>
+                            {% else %}
+                                <p>All assessed categories relevant to this path are at or above the current 70% development threshold.</p>
+                            {% endif %}
+                        </section>
+                    </div>
+                    <p class="career-core-skills"><strong>Core skills:</strong> {{ recommendation.core_skills|join(', ') }}</p>
+                    <a class="text-action career-roadmap-link" href="{{ url_for('roadmap_detail', career_id=recommendation.id) }}">Open {{ recommendation.name }} roadmap <span aria-hidden="true">→</span></a>
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+    <div class="results-actions">
+        <a class="text-action" href="{{ url_for('dashboard') }}">Back to dashboard</a>
+        {% if attempt and not data_issue %}<a class="text-action" href="{{ url_for('roadmaps') }}">View learning roadmaps <span aria-hidden="true">→</span></a>{% endif %}
+        {% if attempt and not data_issue %}<a class="text-action" href="{{ url_for('assessment_results', attempt_id=attempt.id) }}">View assessment results <span aria-hidden="true">→</span></a>{% endif %}
+    </div>
+</section>
+{% endblock %}

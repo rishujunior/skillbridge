@@ -1,0 +1,61 @@
+{% extends "auth/base.html" %}
+{% block title %}Assessment results — SkillBridge{% endblock %}
+{% block content %}
+<section class="results-shell" aria-labelledby="results-title">
+    <div class="results-intro">
+        <p class="eyebrow"><span></span>Assessment results</p>
+        <h1 id="results-title">Your starting-point snapshot.</h1>
+        <p>Overall objective score: <strong>{{ attempt.overall_score }}%</strong>. These results reflect this short assessment only; they are not a professional aptitude judgment or a validated psychometric result.</p>
+    </div>
+
+    <section class="score-grid" aria-label="Objective category scores">
+        {% for category, score in scores.items() %}
+            <article class="score-card">
+                <p class="card-label">{{ category_labels[category] }}</p>
+                <strong>{{ score }}%</strong>
+                <div class="completion-track" aria-label="{{ category_labels[category] }}: {{ score }}%"><span style="width: {{ score }}%"></span></div>
+                <p>{{ score // 33 }} of 3 objective questions correct, rounded to a percentage.</p>
+            </article>
+        {% endfor %}
+    </section>
+
+    <div class="results-grid">
+        <article class="result-panel">
+            <p class="card-label">Strengths in this assessment</p>
+            {% if strengths %}
+                <ul>{% for category in strengths %}<li>{{ category_labels[category] }} ({{ scores[category] }}%)</li>{% endfor %}</ul>
+            {% else %}
+                <p>No category reached the 67% strength threshold in this attempt. That is a useful baseline, not a verdict on your potential.</p>
+            {% endif %}
+        </article>
+        <article class="result-panel">
+            <p class="card-label">Areas to build</p>
+            {% if improvement_areas %}
+                <ul>{% for category in improvement_areas %}<li>{{ category_labels[category] }} ({{ scores[category] }}%)</li>{% endfor %}</ul>
+            {% else %}
+                <p>All objective categories reached the 67% threshold in this short assessment.</p>
+            {% endif %}
+        </article>
+    </div>
+
+    <section class="results-explanation" aria-labelledby="scoring-title">
+        <p class="eyebrow"><span></span>How scoring works</p>
+        <h2 id="scoring-title">Clear rules, no hidden analytics.</h2>
+        <p>There are three objective questions in each category. Each correct answer is worth one point; category scores are correct answers divided by three, rounded to a whole percentage. The overall score is correct objective answers divided by 12. The three career-interest answers are displayed below but do not affect any technical or reasoning score.</p>
+        <div class="interest-list">
+            {% for interest in interests %}
+                <p><strong>{{ interest.prompt }}</strong><span>{{ interest.answer }}</span></p>
+            {% endfor %}
+        </div>
+    </section>
+    <div class="results-actions">
+        <a class="text-action" href="{{ url_for('dashboard') }}">Back to dashboard</a>
+        <a class="text-action" href="{{ url_for('career_recommendations') }}">Explore career matches <span aria-hidden="true">→</span></a>
+        <a class="text-action" href="{{ url_for('roadmaps') }}">View learning roadmaps <span aria-hidden="true">→</span></a>
+        <form action="{{ url_for('start_assessment') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="button" type="submit">Start a new attempt <span aria-hidden="true">→</span></button>
+        </form>
+    </div>
+</section>
+{% endblock %}

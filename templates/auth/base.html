@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SkillBridge student accounts.">
+    <title>{% block title %}SkillBridge{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-page{% if g.user %} app-page{% endif %}">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    {% if g.user %}
+        {% set endpoint = request.endpoint %}
+        <aside class="app-sidebar" id="app-sidebar" aria-label="Student navigation">
+            <a class="sidebar-brand" href="{{ url_for('dashboard') }}" aria-label="SkillBridge dashboard"><span aria-hidden="true">✦</span><span>SkillBridge</span></a>
+            <p class="sidebar-caption">Student workspace</p>
+            <nav class="sidebar-nav" aria-label="Main navigation">
+                <a class="sidebar-link {% if endpoint == 'dashboard' %}is-active{% endif %}" href="{{ url_for('dashboard') }}"><span class="sidebar-icon" aria-hidden="true">⌂</span><span>Dashboard</span></a>
+                <a class="sidebar-link {% if endpoint == 'profile' %}is-active{% endif %}" href="{{ url_for('profile') }}"><span class="sidebar-icon" aria-hidden="true">◉</span><span>My Profile</span></a>
+                <a class="sidebar-link {% if endpoint in ('assessment_question', 'assessment_results') %}is-active{% endif %}" href="{{ url_for('dashboard', _anchor='skill-assessment') }}"><span class="sidebar-icon" aria-hidden="true">✦</span><span>Skill Assessment</span></a>
+                <a class="sidebar-link {% if endpoint == 'career_recommendations' %}is-active{% endif %}" href="{{ url_for('career_recommendations') }}"><span class="sidebar-icon" aria-hidden="true">↗</span><span>Career Matches</span></a>
+                <a class="sidebar-link {% if endpoint in ('roadmaps', 'roadmap_detail') %}is-active{% endif %}" href="{{ url_for('roadmaps') }}"><span class="sidebar-icon" aria-hidden="true">▤</span><span>Learning Roadmaps</span></a>
+            </nav>
+            <div class="sidebar-account">
+                <span class="sidebar-avatar" aria-hidden="true">{{ g.user.name[0]|upper }}</span>
+                <div><strong>{{ g.user.name }}</strong><span>{{ g.user.email }}</span></div>
+                <form action="{{ url_for('logout') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="sidebar-logout" type="submit">Log out <span aria-hidden="true">→</span></button>
+                </form>
+            </div>
+        </aside>
+        <div class="sidebar-backdrop" data-sidebar-backdrop hidden></div>
+        <div class="app-frame">
+            <header class="app-topbar">
+                <button class="sidebar-toggle" type="button" aria-expanded="false" aria-controls="app-sidebar" data-sidebar-toggle><span class="sidebar-toggle__bars" aria-hidden="true">☰</span><span>Menu</span></button>
+                <div class="app-topbar__context"><span aria-hidden="true">✦</span><span>SkillBridge</span><small>Student workspace</small></div>
+            </header>
+    {% else %}
+        <header class="site-header">
+            <div class="shell navigation">
+                <a class="wordmark" href="{{ url_for('home') }}"><span aria-hidden="true">✦</span> SkillBridge</a>
+                <a class="nav-back" href="{{ url_for('home') }}">Back to home</a>
+            </div>
+        </header>
+    {% endif %}
+    <main id="main-content" class="auth-main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-stack">
+                    {% for category, message in messages %}
+                        <div class="flash flash--{{ category }}" {% if category == 'success' %}role="status" data-auto-dismiss="7000"{% else %}role="alert"{% endif %}>
+                            <p>{{ message }}</p>
+                            <button class="flash-dismiss" type="button" aria-label="Dismiss notification">×</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <div class="auth-content">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    {% if g.user %}</div>{% endif %}
+    <script src="{{ url_for('static', filename='js/notifications.js') }}" defer></script>
+    {% if g.user %}<script src="{{ url_for('static', filename='js/sidebar.js') }}" defer></script>{% endif %}
+    {% if request.endpoint == 'profile' %}<script src="{{ url_for('static', filename='js/profile-suggestions.js') }}" defer></script>{% endif %}
+</body>
+</html>

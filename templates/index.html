@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SkillBridge helps students understand their strengths and explore career directions.">
+    <title>SkillBridge — Build skills. Find your direction.</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <header class="site-header">
+        <div class="shell navigation">
+            <a class="wordmark" href="{{ url_for('home') }}" aria-label="SkillBridge home"><span aria-hidden="true">✦</span> SkillBridge</a>
+            <nav class="primary-nav" aria-label="Primary navigation">
+                <a href="#features">Why SkillBridge</a>
+                <a href="#how-it-works">How it works</a>
+            </nav>
+            <div class="landing-nav-actions">
+                {% if g.user %}
+                    <a class="button button--small" href="{{ url_for('dashboard') }}">Go to dashboard <span aria-hidden="true">→</span></a>
+                {% else %}
+                    <a class="nav-login" href="{{ url_for('login') }}">Log in</a>
+                    <a class="button button--small" href="{{ url_for('register') }}">Sign up <span aria-hidden="true">→</span></a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <section class="hero" aria-labelledby="hero-title">
+            <div class="hero__glow" aria-hidden="true"></div>
+            <div class="shell hero__grid">
+                <div class="hero__content">
+                    <p class="eyebrow"><span></span>Your skills. Your direction.</p>
+                    <h1 id="hero-title">Build skills.<br><em>Find your direction.</em></h1>
+                    <p class="hero__summary">Understand your strengths, discover career paths that fit, and learn what to work on next.</p>
+                    <div class="hero__actions">
+                        <a class="button" href="{{ url_for('dashboard') if g.user else url_for('register') }}">{% if g.user %}Go to dashboard{% else %}Create your account{% endif %} <span aria-hidden="true">→</span></a>
+                        <a class="button button--secondary" href="#how-it-works">Explore how it works</a>
+                    </div>
+                </div>
+
+                <div class="hero-art">
+                    <img src="{{ url_for('static', filename='images/hero.png') }}" alt="Layered geometric illustration representing skill development and career growth">
+                </div>
+            </div>
+        </section>
+
+        <section class="features" id="features" aria-labelledby="features-title">
+            <div class="shell">
+                <div class="section-heading">
+                    <p class="eyebrow"><span></span>Built for the next move</p>
+                    <h2 id="features-title">Clarity for what comes next.</h2>
+                    <p>SkillBridge turns reflection into a useful direction—not a generic list of possibilities.</p>
+                </div>
+                <div class="feature-grid">
+                    <article class="feature-card">
+                        <span class="feature-icon feature-icon--spark" aria-hidden="true">✦</span>
+                        <h3>Discover your skills</h3>
+                        <p>See the abilities you already bring and the patterns worth building on.</p>
+                    </article>
+                    <article class="feature-card">
+                        <span class="feature-icon feature-icon--path" aria-hidden="true">↗</span>
+                        <h3>Identify skill gaps</h3>
+                        <p>Understand what to develop next without trying to learn everything at once.</p>
+                    </article>
+                    <article class="feature-card">
+                        <span class="feature-icon feature-icon--focus" aria-hidden="true">◎</span>
+                        <h3>Explore career paths</h3>
+                        <p>Discover directions that connect to your interests and capabilities.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="process" id="how-it-works" aria-labelledby="process-title">
+            <div class="shell process__grid">
+                <div class="process__intro">
+                    <p class="eyebrow"><span></span>How it works</p>
+                    <h2 id="process-title">Start with where you are.</h2>
+                    <p>Progress is easier when the next move is clear.</p>
+                </div>
+                <ol class="steps">
+                    <li>
+                        <span class="step-number">01</span>
+                        <div><h3>Share your starting point</h3><p>Tell us about the skills, interests, and learning experiences you have today.</p></div>
+                    </li>
+                    <li>
+                        <span class="step-number">02</span>
+                        <div><h3>Understand your profile</h3><p>See your strengths and identify the areas that could open up more options.</p></div>
+                    </li>
+                    <li>
+                        <span class="step-number">03</span>
+                        <div><h3>Move with intention</h3><p>Use your direction to choose the courses, projects, and opportunities that fit.</p></div>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="closing">
+            <div class="shell closing__content">
+                <p class="eyebrow"><span></span>Your next chapter</p>
+                <h2>Start building a path that feels like yours.</h2>
+                <a class="button" href="{{ url_for('dashboard') if g.user else url_for('register') }}">{% if g.user %}Go to dashboard{% else %}Create your account{% endif %} <span aria-hidden="true">→</span></a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell footer__content">
+            <a class="wordmark" href="{{ url_for('home') }}"><span aria-hidden="true">✦</span> SkillBridge</a>
+            <p>Learn with direction. Build with purpose.</p>
+            <small>© 2026 SkillBridge</small>
+        </div>
+    </footer>
+</body>
+</html>

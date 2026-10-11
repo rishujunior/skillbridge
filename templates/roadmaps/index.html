@@ -1,0 +1,40 @@
+{% extends "auth/base.html" %}
+{% block title %}Learning roadmaps — SkillBridge{% endblock %}
+{% block content %}
+<section class="roadmaps-shell" aria-labelledby="roadmaps-title">
+    <div class="roadmaps-intro">
+        <p class="eyebrow"><span></span>Learning roadmaps</p>
+        <h1 id="roadmaps-title">Choose a direction and build it step by step.</h1>
+        <p>These roadmaps are structured guidance based on your current career matches. They are not a guarantee of employment or professional certification.</p>
+    </div>
+    {% if not attempt %}
+        <section class="roadmap-empty" aria-labelledby="roadmap-assessment-title">
+            <span class="card-mark" aria-hidden="true">↗</span>
+            <div><h2 id="roadmap-assessment-title">Complete an assessment first.</h2><p>A completed assessment is needed before SkillBridge can offer the available career roadmaps.</p></div>
+            <form action="{{ url_for('start_assessment') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button" type="submit">Start assessment <span aria-hidden="true">→</span></button></form>
+        </section>
+    {% elif data_issue %}
+        <section class="roadmap-empty" aria-labelledby="roadmap-data-title">
+            <span class="card-mark" aria-hidden="true">!</span>
+            <div><h2 id="roadmap-data-title">Career matches are unavailable.</h2><p>This completed assessment has incomplete or invalid saved data. Start a new assessment before choosing a roadmap.</p></div>
+            <form action="{{ url_for('start_assessment') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button" type="submit">Start a new assessment <span aria-hidden="true">→</span></button></form>
+        </section>
+    {% else %}
+        <section class="roadmap-picker" aria-labelledby="roadmap-picker-title">
+            <p class="eyebrow"><span></span>Your available paths</p>
+            <h2 id="roadmap-picker-title">Start with a career match that interests you.</h2>
+            <div class="roadmap-picker__grid">
+                {% for recommendation in recommendations %}
+                    <article class="roadmap-picker__card">
+                        <p class="card-label">{{ recommendation.match_score }}% current match</p>
+                        <h3>{{ recommendation.name }}</h3>
+                        <p>{{ recommendation.description }}</p>
+                        <a class="text-action" href="{{ url_for('roadmap_detail', career_id=recommendation.id) }}">View roadmap <span aria-hidden="true">→</span></a>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+    <div class="results-actions"><a class="text-action" href="{{ url_for('career_recommendations') }}">Back to career matches</a><a class="text-action" href="{{ url_for('dashboard') }}">Back to dashboard</a></div>
+</section>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "auth/base.html" %}
+{% block title %}Skill assessment — SkillBridge{% endblock %}
+{% block content %}
+<section class="assessment-shell" aria-labelledby="assessment-title">
+    <div class="assessment-intro">
+        <p class="eyebrow"><span></span>Skill assessment</p>
+        <h1 id="assessment-title">Build a clearer starting point.</h1>
+        <p>This is an initial self-evaluation, not a validated psychometric or professional aptitude test. Objective questions measure selected fundamentals; interest questions only record your preferences.</p>
+    </div>
+
+    <form class="assessment-form" method="post" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="assessment-progress" aria-label="Question {{ position }} of {{ total_questions }}">
+            <div><span>Question {{ position }} of {{ total_questions }}</span><strong>{{ ((position / total_questions) * 100)|round|int }}%</strong></div>
+            <div class="completion-track" aria-hidden="true"><span style="width: {{ (position / total_questions) * 100 }}%"></span></div>
+        </div>
+        <fieldset>
+            <legend>{{ question.prompt }}</legend>
+            {% if question.category == 'interests' %}
+                <p class="question-note">This preference does not affect your knowledge scores.</p>
+            {% endif %}
+            <div class="answer-options">
+                {% for value, label in question.options %}
+                    <label class="answer-option" for="answer-{{ value }}">
+                        <input id="answer-{{ value }}" name="answer" type="radio" value="{{ value }}" {% if selected_answer == value %}checked{% endif %} required>
+                        <span>{{ label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+        </fieldset>
+        <div class="assessment-actions">
+            {% if position > 1 %}
+                <button class="text-button" type="submit" name="action" value="previous">← Previous</button>
+            {% else %}
+                <a class="text-action" href="{{ url_for('dashboard') }}">Save and exit</a>
+            {% endif %}
+            {% if position == total_questions %}
+                <button class="button" type="submit" name="action" value="finish">Finish assessment <span aria-hidden="true">→</span></button>
+            {% else %}
+                <button class="button" type="submit" name="action" value="next">Save and continue <span aria-hidden="true">→</span></button>
+            {% endif %}
+        </div>
+    </form>
+</section>
+{% endblock %}
