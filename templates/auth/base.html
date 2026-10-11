@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="SkillBridge student accounts.">
+    <meta name="theme-color" content="#070b1d">
     <title>{% block title %}SkillBridge{% endblock %}</title>
+    <script>(function(){var key="skillbridge-theme",theme;try{theme=localStorage.getItem(key)}catch(error){}if(theme!=="dark"&&theme!=="light"){theme=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme}());</script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="auth-page{% if g.user %} app-page{% endif %}">
@@ -38,12 +40,13 @@
             <header class="app-topbar">
                 <button class="sidebar-toggle" type="button" aria-expanded="false" aria-controls="app-sidebar" data-sidebar-toggle><span class="sidebar-toggle__bars" aria-hidden="true">☰</span><span>Menu</span></button>
                 <div class="app-topbar__context"><span aria-hidden="true">✦</span><span>SkillBridge</span><small>Student workspace</small></div>
+                <button class="theme-toggle theme-toggle--app" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light or dark theme" title="Switch to light or dark theme"><span class="theme-toggle__sun" aria-hidden="true">☀</span><span class="theme-toggle__moon" aria-hidden="true">☾</span></button>
             </header>
     {% else %}
         <header class="site-header">
             <div class="shell navigation">
                 <a class="wordmark" href="{{ url_for('home') }}"><span aria-hidden="true">✦</span> SkillBridge</a>
-                <a class="nav-back" href="{{ url_for('home') }}">Back to home</a>
+                <div class="auth-header-actions"><button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light or dark theme" title="Switch to light or dark theme"><span class="theme-toggle__sun" aria-hidden="true">☀</span><span class="theme-toggle__moon" aria-hidden="true">☾</span></button><a class="nav-back" href="{{ url_for('home') }}">Back to home</a></div>
             </div>
         </header>
     {% endif %}
@@ -65,6 +68,7 @@
         </div>
     </main>
     {% if g.user %}</div>{% endif %}
+    <script src="{{ url_for('static', filename='js/theme.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/notifications.js') }}" defer></script>
     {% if g.user %}<script src="{{ url_for('static', filename='js/sidebar.js') }}" defer></script>{% endif %}
     {% if request.endpoint == 'profile' %}<script src="{{ url_for('static', filename='js/profile-suggestions.js') }}" defer></script>{% endif %}

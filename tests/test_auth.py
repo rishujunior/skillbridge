@@ -59,9 +59,15 @@ def test_landing_and_authenticated_navigation_expose_visible_routes(client):
     assert b'href="/login"' in landing.data
     assert b'href="/register"' in landing.data
     assert b"Create your account" in landing.data
+    assert b'data-theme-toggle' in landing.data
+    assert b'title="Switch to light or dark theme"' in landing.data
+    assert b'data-theme-toggle-label' not in landing.data
+    assert b'static/js/theme.js' in landing.data
     login = client.get("/login")
     assert b'class="app-sidebar"' not in login.data
     assert b'static/js/sidebar.js' not in login.data
+    assert b'data-theme-toggle' in login.data
+    assert b'static/js/theme.js' in login.data
 
     register(client)
     signed_in_landing = client.get("/")
@@ -81,6 +87,9 @@ def test_landing_and_authenticated_navigation_expose_visible_routes(client):
     assert b'class="app-sidebar"' in dashboard.data
     assert b'class="sidebar-link is-active"' in dashboard.data
     assert b'static/js/sidebar.js' in dashboard.data
+    assert b'data-theme-toggle' in dashboard.data
+    assert b'data-sidebar-toggle' in dashboard.data
+    assert b'>Menu<' in dashboard.data
 
     profile = client.get("/profile")
     assert b'class="sidebar-link is-active"' in profile.data
