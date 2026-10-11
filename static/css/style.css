@@ -942,3 +942,66 @@ h2 { margin-bottom: 16px; font-size: clamp(2.45rem, 4.5vw, 4rem); font-weight: 8
     .resume-entry-card { padding: 20px 15px; }
     .resume-entry-card__remove { right: 10px; }
 }
+
+/* Student Project Portfolio */
+.projects-shell, .project-form-shell, .project-confirm-shell { width: min(100%, 1080px); padding: 48px 0 62px; }
+.projects-intro { display: flex; justify-content: space-between; gap: 30px; align-items: end; margin-bottom: 34px; }
+.projects-intro > div, .project-form-intro { max-width: 710px; }
+.projects-intro h1, .project-form-intro h1, .project-confirm-card h1 { margin-bottom: 14px; font-size: clamp(2.4rem, 5vw, 4.2rem); }
+.projects-intro > div > p:last-child, .project-form-intro > p:last-child { margin-bottom: 0; color: var(--muted); line-height: 1.7; }
+.project-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.project-card, .projects-empty, .project-form, .project-confirm-card { border: 1px solid var(--line); border-radius: 13px; background: linear-gradient(145deg, rgba(33, 36, 81, 0.72), rgba(12, 16, 42, 0.9)); box-shadow: inset 0 1px 0 rgba(238, 235, 255, 0.05); }
+.project-card { display: flex; min-width: 0; min-height: 410px; flex-direction: column; overflow: hidden; }
+.project-card__image { display: block; width: 100%; height: 176px; border-bottom: 1px solid var(--line); background: #11183c; object-fit: cover; }
+.project-card__image--placeholder { display: grid; place-items: center; background: radial-gradient(circle at 65% 22%, rgba(184, 154, 255, .3), transparent 26%), linear-gradient(145deg, #26215d, #0d1431); color: #d1c1ff; font-size: 34px; }
+.project-card__body { min-width: 0; padding: 21px 22px 16px; }
+.project-card h2 { margin-bottom: 9px; overflow-wrap: anywhere; font-size: 20px; letter-spacing: -.045em; }
+.project-card__body > p { display: -webkit-box; margin-bottom: 17px; overflow: hidden; color: var(--muted); font-size: 13px; line-height: 1.6; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+.project-tech-list { display: flex; flex-wrap: wrap; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.project-tech-list li { max-width: 100%; overflow-wrap: anywhere; padding: 5px 8px; border: 1px solid rgba(194, 177, 255, .19); border-radius: 99px; background: rgba(255, 255, 255, .035); color: #cfc5ff; font-size: 11px; font-weight: 700; }
+.project-card__footer { display: grid; gap: 16px; margin-top: auto; padding: 16px 22px 20px; border-top: 1px solid rgba(207, 210, 255, .1); }
+.project-card__links, .project-card__actions { display: flex; flex-wrap: wrap; gap: 13px; align-items: center; }
+.project-card__links a { color: #d2c6ff; font-size: 12px; font-weight: 800; }
+.project-card__links a:hover { color: #f0ecff; }
+.project-card__actions { justify-content: space-between; }
+.project-card__delete { color: #efaebc; }
+.project-card__delete:hover { color: #ffd4dc; }
+.projects-empty { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 25px; align-items: center; padding: 31px; }
+.projects-empty .card-mark { margin: 0; }
+.projects-empty h2 { margin-bottom: 6px; font-size: 1.8rem; }
+.projects-empty p { max-width: 640px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+.project-form-shell { width: min(100%, 900px); }
+.project-form-intro { margin-bottom: 32px; }
+.project-form { padding: clamp(25px, 4vw, 40px); }
+.project-form__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 18px; }
+.project-form .form-field { min-width: 0; margin: 0; }
+.project-form .form-field label { display: block; margin-bottom: 9px; color: #e8e7f8; font-size: 12px; font-weight: 800; }
+.field-optional { color: var(--muted-dark); font-weight: 600; }
+.project-form input, .project-form textarea { width: 100%; border: 1px solid rgba(205, 201, 255, .21); border-radius: 7px; outline: none; background: rgba(3, 7, 24, .62); color: var(--text); font: inherit; font-size: 14px; }
+.project-form input { min-height: 52px; padding: 0 13px; }
+.project-form textarea { min-height: 112px; padding: 12px 13px; resize: vertical; }
+.project-form input:hover, .project-form textarea:hover { border-color: rgba(190, 170, 255, .42); }
+.project-form input:focus, .project-form textarea:focus { border-color: #ae95ff; box-shadow: 0 0 0 4px rgba(151, 118, 255, .15); }
+.project-form__actions, .project-confirm-card__actions { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-top: 27px; }
+.project-confirm-shell { display: grid; min-height: 60vh; place-items: center; }
+.project-confirm-card { width: min(100%, 660px); padding: clamp(28px, 5vw, 48px); }
+.project-confirm-card .card-mark { margin-bottom: 24px; color: #ffd0da; }
+.project-confirm-card > p:last-of-type { max-width: 500px; margin-bottom: 0; color: var(--muted); line-height: 1.65; }
+.button--danger { background: linear-gradient(135deg, #be536d, #8f314b); box-shadow: 0 10px 25px rgba(116, 34, 58, .25); }
+.button--danger:hover { background: linear-gradient(135deg, #d46882, #a63d57); }
+
+@media (max-width: 900px) { .project-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) {
+    .projects-shell, .project-form-shell, .project-confirm-shell { padding-top: 38px; }
+    .projects-intro { display: block; }
+    .projects-intro .button { margin-top: 24px; }
+    .project-grid, .project-form__grid { grid-template-columns: 1fr; }
+    .projects-empty { grid-template-columns: auto minmax(0, 1fr); }
+    .projects-empty .button { grid-column: 1 / -1; width: 100%; }
+}
+@media (max-width: 460px) {
+    .project-form { padding: 24px 20px; }
+    .project-form__actions, .project-confirm-card__actions { display: grid; grid-template-columns: 1fr; }
+    .project-form__actions .button, .project-confirm-card__actions .button { width: 100%; }
+    .project-form__actions .text-action, .project-confirm-card__actions .text-action { text-align: center; }
+}

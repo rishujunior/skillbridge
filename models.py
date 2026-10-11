@@ -153,3 +153,23 @@ class ResumeEntry(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc), nullable=False,
     )
+
+
+class StudentProject(Base):
+    __tablename__ = "student_projects"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    technologies_json: Mapped[str] = mapped_column(Text, nullable=False)
+    github_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    live_demo_url: Mapped[str | None] = mapped_column(String(500))
+    image_url: Mapped[str | None] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc), nullable=False,
+    )

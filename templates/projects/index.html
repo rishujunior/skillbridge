@@ -1,0 +1,51 @@
+{% extends "auth/base.html" %}
+{% block title %}Project Portfolio — SkillBridge{% endblock %}
+{% block content %}
+<section class="projects-shell" aria-labelledby="projects-title">
+    <div class="projects-intro">
+        <div>
+            <p class="eyebrow"><span></span>Student Project Portfolio</p>
+            <h1 id="projects-title">Show the work you are building.</h1>
+            <p>Keep a private record of projects, the technologies behind them, and the links that document your work.</p>
+        </div>
+        <a class="button" href="{{ url_for('create_project') }}">Add a project <span aria-hidden="true">+</span></a>
+    </div>
+
+    {% if projects %}
+        <div class="project-grid">
+            {% for project in projects %}
+                <article class="project-card">
+                    {% if project.image_url %}
+                        <img class="project-card__image" src="{{ project.image_url }}" alt="Preview image for {{ project.title }}" loading="lazy" referrerpolicy="no-referrer">
+                    {% else %}
+                        <div class="project-card__image project-card__image--placeholder" aria-hidden="true">✦</div>
+                    {% endif %}
+                    <div class="project-card__body">
+                        <h2>{{ project.title }}</h2>
+                        <p>{{ project.description }}</p>
+                        <ul class="project-tech-list" aria-label="Technologies used">
+                            {% for technology in technologies_by_project[project.id] %}<li>{{ technology }}</li>{% endfor %}
+                        </ul>
+                    </div>
+                    <footer class="project-card__footer">
+                        <div class="project-card__links">
+                            <a href="{{ project.github_url }}" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+                            {% if project.live_demo_url %}<a href="{{ project.live_demo_url }}" target="_blank" rel="noopener noreferrer">Live demo <span aria-hidden="true">↗</span></a>{% endif %}
+                        </div>
+                        <div class="project-card__actions">
+                            <a class="text-action" href="{{ url_for('edit_project', project_id=project.id) }}">Edit</a>
+                            <a class="text-action project-card__delete" href="{{ url_for('delete_project', project_id=project.id) }}">Delete</a>
+                        </div>
+                    </footer>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="projects-empty">
+            <span class="card-mark" aria-hidden="true">▧</span>
+            <div><h2>Your portfolio starts with one project.</h2><p>Add a project you built, explored, or contributed to. SkillBridge will not add claims or project details for you.</p></div>
+            <a class="button button--secondary" href="{{ url_for('create_project') }}">Add a project</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

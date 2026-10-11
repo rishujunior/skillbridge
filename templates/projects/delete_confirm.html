@@ -1,0 +1,16 @@
+{% extends "auth/base.html" %}
+{% block title %}Delete project — SkillBridge{% endblock %}
+{% block content %}
+<section class="project-confirm-shell" aria-labelledby="delete-project-title">
+    <div class="project-confirm-card">
+        <span class="card-mark" aria-hidden="true">!</span>
+        <p class="eyebrow"><span></span>Confirm deletion</p>
+        <h1 id="delete-project-title">Remove “{{ project.title }}”?</h1>
+        <p>This removes the project from your private SkillBridge portfolio. This action cannot be undone.</p>
+        <form action="{{ url_for('delete_project', project_id=project.id) }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="project-confirm-card__actions"><a class="text-action" href="{{ url_for('projects') }}">Keep project</a><button class="button button--danger" type="submit">Delete project</button></div>
+        </form>
+    </div>
+</section>
+{% endblock %}

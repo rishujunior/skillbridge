@@ -15,13 +15,14 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from assessment import CATEGORY_LABELS, OBJECTIVE_CATEGORIES, QUESTIONS, calculate_scores, option_label
 from career_recommendations import build_recommendations
-from models import AssessmentAnswer, AssessmentAttempt, Base, Resume, ResumeEntry, RoadmapProgress, StudentProfile, User
+from models import AssessmentAnswer, AssessmentAttempt, Base, Resume, ResumeEntry, RoadmapProgress, StudentProfile, StudentProject, User
 from roadmaps import VALID_PROGRESS_STATUSES, milestones_for, progress_summary, roadmap_for
 from weasyprint import CSS, HTML
 
 
 RESUME_ENTRY_TYPES = ("project", "experience", "certification", "link")
 MAX_RESUME_ENTRIES = 20
+MAX_PROJECT_TECHNOLOGIES = 25
 
 
 def create_app(test_config=None):
@@ -488,6 +489,167 @@ def create_app(test_config=None):
     def valid_resume_url(value):
         parsed = urlparse(value)
         return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+    def project_technologies(project):
+        try:
+            technologies = json.loads(project.technologies_json)
+        except (AttributeError, TypeError, json.JSONDecodeError):
+            return []
+        return [item for item in technologies if isinstance(item, str) and item.strip()]
+
+    def owned_project(project_id):
+        project = db_session.scalar(
+            select(StudentProject).where(
+                StudentProject.id == project_id, StudentProject.user_id == g.user.id
+            )
+        )
+        if project is None:
+            abort(404)
+        return project
+
+    def valid_github_repository_url(value):
+        parsed = urlparse(value)
+        path_parts = [part for part in parsed.path.split("/") if part]
+        return (
+            parsed.scheme == "https"
+            and parsed.hostname == "github.com"
+            and len(path_parts) == 2
+            and not parsed.params
+            and not parsed.query
+            and not parsed.fragment
+        )
+
+    def project_form_values(project=None):
+        if project is None:
+            return {
+                "title": "", "description": "", "technologies": "", "github_url": "",
+                "live_demo_url": "", "image_url": "",
+            }
+        return {
+            "title": project.title,
+            "description": project.description,
+            "technologies": ", ".join(project_technologies(project)),
+            "github_url": project.github_url,
+            "live_demo_url": project.live_demo_url or "",
+            "image_url": project.image_url or "",
+        }
+
+    def submitted_project_values():
+        values = {
+            "title": request.form.get("title", "").strip(),
+            "description": request.form.get("description", "").strip(),
+            "technologies": request.form.get("technologies", "").strip(),
+            "github_url": request.form.get("github_url", "").strip(),
+            "live_demo_url": request.form.get("live_demo_url", "").strip(),
+            "image_url": request.form.get("image_url", "").strip(),
+        }
+        errors = []
+        if not values["title"]:
+            errors.append("Project title is required.")
+        if not values["description"]:
+            errors.append("Project description is required.")
+        for key, label, maximum in (
+            ("title", "Project title", 160),
+            ("description", "Project description", 4000),
+            ("technologies", "Technologies", 1000),
+            ("github_url", "GitHub repository URL", 500),
+            ("live_demo_url", "Live demo URL", 500),
+            ("image_url", "Project image URL", 500),
+        ):
+            if len(values[key]) > maximum:
+                errors.append(f"{label} must be {maximum} characters or fewer.")
+
+        technologies = []
+        seen_technologies = set()
+        for technology in values["technologies"].replace("\n", ",").split(","):
+            technology = technology.strip()
+            normalized = technology.casefold()
+            if technology and normalized not in seen_technologies:
+                technologies.append(technology)
+                seen_technologies.add(normalized)
+        if not technologies:
+            errors.append("Add at least one technology used in this project.")
+        if len(technologies) > MAX_PROJECT_TECHNOLOGIES or any(len(item) > 80 for item in technologies):
+            errors.append(f"Add up to {MAX_PROJECT_TECHNOLOGIES} technologies, with no technology longer than 80 characters.")
+        if not valid_github_repository_url(values["github_url"]):
+            errors.append("Enter a canonical HTTPS GitHub repository URL.")
+        for key, label in (("live_demo_url", "Live demo URL"), ("image_url", "Project image URL")):
+            if values[key] and not valid_resume_url(values[key]):
+                errors.append(f"{label} must use a valid http:// or https:// URL.")
+        return values, technologies, errors
+
+    @app.get("/projects")
+    @login_required
+    def projects():
+        student_projects = db_session.scalars(
+            select(StudentProject)
+            .where(StudentProject.user_id == g.user.id)
+            .order_by(StudentProject.updated_at.desc(), StudentProject.id.desc())
+        ).all()
+        return render_template(
+            "projects/index.html",
+            projects=student_projects,
+            technologies_by_project={project.id: project_technologies(project) for project in student_projects},
+        )
+
+    @app.route("/projects/new", methods=("GET", "POST"))
+    @login_required
+    @csrf_protected
+    def create_project():
+        if request.method == "POST":
+            values, technologies, errors = submitted_project_values()
+            if errors:
+                for error in dict.fromkeys(errors):
+                    flash(error, "error")
+                return render_template("projects/form.html", project=None, values=values), 400
+            project = StudentProject(
+                user_id=g.user.id,
+                title=values["title"],
+                description=values["description"],
+                technologies_json=json.dumps(technologies),
+                github_url=values["github_url"],
+                live_demo_url=values["live_demo_url"] or None,
+                image_url=values["image_url"] or None,
+            )
+            db_session.add(project)
+            db_session.commit()
+            flash("Project added to your portfolio.", "success")
+            return redirect(url_for("projects"))
+        return render_template("projects/form.html", project=None, values=project_form_values())
+
+    @app.route("/projects/<int:project_id>/edit", methods=("GET", "POST"))
+    @login_required
+    @csrf_protected
+    def edit_project(project_id):
+        project = owned_project(project_id)
+        if request.method == "POST":
+            values, technologies, errors = submitted_project_values()
+            if errors:
+                for error in dict.fromkeys(errors):
+                    flash(error, "error")
+                return render_template("projects/form.html", project=project, values=values), 400
+            project.title = values["title"]
+            project.description = values["description"]
+            project.technologies_json = json.dumps(technologies)
+            project.github_url = values["github_url"]
+            project.live_demo_url = values["live_demo_url"] or None
+            project.image_url = values["image_url"] or None
+            db_session.commit()
+            flash("Project updated.", "success")
+            return redirect(url_for("projects"))
+        return render_template("projects/form.html", project=project, values=project_form_values(project))
+
+    @app.route("/projects/<int:project_id>/delete", methods=("GET", "POST"))
+    @login_required
+    @csrf_protected
+    def delete_project(project_id):
+        project = owned_project(project_id)
+        if request.method == "POST":
+            db_session.delete(project)
+            db_session.commit()
+            flash("Project removed from your portfolio.", "success")
+            return redirect(url_for("projects"))
+        return render_template("projects/delete_confirm.html", project=project)
 
     @app.route("/resume", methods=("GET", "POST"))
     @login_required

@@ -1,0 +1,23 @@
+{% extends "auth/base.html" %}
+{% block title %}{% if project %}Edit project{% else %}Add project{% endif %} — SkillBridge{% endblock %}
+{% block content %}
+<section class="project-form-shell" aria-labelledby="project-form-title">
+    <div class="project-form-intro">
+        <p class="eyebrow"><span></span>Student Project Portfolio</p>
+        <h1 id="project-form-title">{% if project %}Refine your project details.{% else %}Add a project you can stand behind.{% endif %}</h1>
+        <p>Use clear, accurate details. URLs are checked when you save, and your project stays private to your SkillBridge account.</p>
+    </div>
+    <form class="project-form" action="{% if project %}{{ url_for('edit_project', project_id=project.id) }}{% else %}{{ url_for('create_project') }}{% endif %}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="project-form__grid">
+            <div class="form-field form-field--full"><label for="title">Project title</label><input id="title" name="title" maxlength="160" required value="{{ values.title }}" placeholder="e.g., Accessible campus events planner"></div>
+            <div class="form-field form-field--full"><label for="description">Description</label><textarea id="description" name="description" maxlength="4000" rows="7" required placeholder="Describe what the project does, your contribution, and a meaningful outcome.">{{ values.description }}</textarea><small class="field-help">Keep it factual: this portfolio records your own project work.</small></div>
+            <div class="form-field form-field--full"><label for="technologies">Technologies used</label><textarea id="technologies" name="technologies" maxlength="1000" rows="3" required placeholder="Python, Flask, SQLite, HTML, CSS">{{ values.technologies }}</textarea><small class="field-help">Separate up to 25 technologies with commas.</small></div>
+            <div class="form-field form-field--full"><label for="github_url">GitHub repository URL</label><input id="github_url" name="github_url" type="url" maxlength="500" required value="{{ values.github_url }}" placeholder="https://github.com/account/repository"><small class="field-help">Use the canonical HTTPS URL for the repository.</small></div>
+            <div class="form-field"><label for="live_demo_url">Live demo URL <span class="field-optional">Optional</span></label><input id="live_demo_url" name="live_demo_url" type="url" maxlength="500" value="{{ values.live_demo_url }}" placeholder="https://example.com"></div>
+            <div class="form-field"><label for="image_url">Project image URL <span class="field-optional">Optional</span></label><input id="image_url" name="image_url" type="url" maxlength="500" value="{{ values.image_url }}" placeholder="https://example.com/project.png"><small class="field-help">Images are shown directly by your browser and are never fetched by SkillBridge.</small></div>
+        </div>
+        <div class="project-form__actions"><a class="text-action" href="{{ url_for('projects') }}">Cancel</a><button class="button" type="submit">{% if project %}Save changes{% else %}Add project{% endif %} <span aria-hidden="true">→</span></button></div>
+    </form>
+</section>
+{% endblock %}
