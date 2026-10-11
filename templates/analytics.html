@@ -76,7 +76,11 @@
                         <div><strong>{{ roadmap.summary.percentage }}%</strong><span>complete</span></div>
                         <div class="completion-track" aria-label="{{ roadmap.name }} is {{ roadmap.summary.percentage }}% complete"><span style="width: {{ roadmap.summary.percentage }}%"></span></div>
                         <p>{{ roadmap.summary.completed }} of {{ roadmap.summary.total }} milestones completed.</p>
-                        <a class="text-action" href="{{ url_for('roadmaps') }}">Review roadmap <span aria-hidden="true">→</span></a>
+                        {% if roadmap.is_available %}
+                            <a class="text-action" href="{{ url_for('roadmap_detail', career_id=roadmap.id) }}">Review roadmap <span aria-hidden="true">→</span></a>
+                        {% else %}
+                            <p class="analytics-roadmap-card__unavailable">Complete a valid assessment to reopen this roadmap.</p>
+                        {% endif %}
                     </article>
                 {% endfor %}
             </div>

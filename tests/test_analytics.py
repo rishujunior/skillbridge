@@ -139,6 +139,7 @@ def test_analytics_keeps_assessments_and_roadmap_progress_private(client, app):
 def test_analytics_shows_actual_valid_roadmap_completion(client, app):
     register(client)
     user_id = account_id(client)
+    add_completed_attempt(app, user_id)
     with app.app_context():
         db_session = app.extensions["db_session"]
         db_session.add_all([
@@ -168,3 +169,4 @@ def test_analytics_shows_actual_valid_roadmap_completion(client, app):
     assert "1 of 6 milestones completed." in content
     assert "17%" in content
     assert "unknown-career" not in content
+    assert 'href="/roadmaps/software-developer"' in content

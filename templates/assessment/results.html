@@ -4,10 +4,30 @@
 <section class="results-shell" aria-labelledby="results-title">
     <div class="results-intro">
         <p class="eyebrow"><span></span>Assessment results</p>
+        {% if data_issue %}
+        <h1 id="results-title">Assessment data is unavailable.</h1>
+        <p>This completed attempt has incomplete or invalid saved scores, so SkillBridge cannot safely show results from it. Start a new assessment to create a complete snapshot.</p>
+        {% else %}
         <h1 id="results-title">Your starting-point snapshot.</h1>
         <p>Overall objective score: <strong>{{ attempt.overall_score }}%</strong>. These results reflect this short assessment only; they are not a professional aptitude judgment or a validated psychometric result.</p>
+        {% endif %}
     </div>
 
+    {% if data_issue %}
+    <div class="results-grid">
+        <article class="result-panel">
+            <p class="card-label">What you can do next</p>
+            <p>Your saved answers and scores do not form a valid completed assessment record. Retaking the assessment will save a fresh result without changing this legacy record.</p>
+        </article>
+    </div>
+    <div class="results-actions">
+        <a class="text-action" href="{{ url_for('dashboard') }}">Back to dashboard</a>
+        <form action="{{ url_for('start_assessment') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="button" type="submit">Start a new attempt <span aria-hidden="true">→</span></button>
+        </form>
+    </div>
+    {% else %}
     <section class="score-grid" aria-label="Objective category scores">
         {% for category, score in scores.items() %}
             <article class="score-card">
@@ -57,5 +77,6 @@
             <button class="button" type="submit">Start a new attempt <span aria-hidden="true">→</span></button>
         </form>
     </div>
+    {% endif %}
 </section>
 {% endblock %}

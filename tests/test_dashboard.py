@@ -159,6 +159,27 @@ def test_dashboard_honestly_handles_invalid_completed_assessment_data(client, ap
     assert "Software Developer" not in content
 
 
+def test_dashboard_and_careers_use_latest_valid_completed_assessment(client, app):
+    register(client)
+    user_id = account_id(client)
+    now = datetime.now(timezone.utc)
+    add_completed_attempt(app, user_id, overall_score=75, completed_at=now - timedelta(days=1))
+    add_completed_attempt(
+        app,
+        user_id,
+        scores={"programming": None, "logical_reasoning": 60, "problem_solving": 60, "analytical_thinking": 60},
+        overall_score=60,
+        completed_at=now,
+    )
+
+    dashboard = client.get("/dashboard").get_data(as_text=True)
+    careers = client.get("/careers").get_data(as_text=True)
+    assert "Overall score: <strong>75%</strong>" in dashboard
+    assert "Assessment results unavailable" not in dashboard
+    assert "Software Developer" in careers
+    assert "This assessment cannot be used yet." not in careers
+
+
 def test_dashboard_uses_current_users_latest_valid_roadmap_progress(client, app):
     register(client)
     first_user_id = account_id(client)

@@ -291,11 +291,14 @@ def create_app(test_config=None):
             if row.milestone_id not in valid_milestones:
                 continue
             statuses_by_career.setdefault(row.career_id, {}).setdefault(row.milestone_id, row.status)
+        _recommendation_attempt, recommendations = latest_recommendations_for_user(g.user.id)
+        available_roadmap_ids = {recommendation["id"] for recommendation in recommendations or ()}
         roadmap_summaries = tuple(
             {
                 "id": career_id,
                 "name": roadmap_for(career_id)["career_name"],
                 "summary": progress_summary(roadmap_for(career_id), statuses),
+                "is_available": career_id in available_roadmap_ids,
             }
             for career_id, statuses in statuses_by_career.items()
         )
@@ -325,13 +328,21 @@ def create_app(test_config=None):
         return {answer.question_id: answer.answer_value for answer in answers}
 
     def latest_recommendations_for_user(user_id):
-        attempt = db_session.scalar(
+        completed_attempts = db_session.scalars(
             select(AssessmentAttempt)
             .where(AssessmentAttempt.user_id == user_id, AssessmentAttempt.status == "completed")
-            .order_by(AssessmentAttempt.completed_at.desc())
+            .order_by(AssessmentAttempt.completed_at.desc(), AssessmentAttempt.id.desc())
+        ).all()
+        if not completed_attempts:
+            return None, None
+        attempt = next(
+            (candidate for candidate in completed_attempts if valid_completed_assessment(candidate)),
+            None,
         )
         if attempt is None:
-            return None, None
+            # Preserve the existing data-unavailable states when every completed
+            # record is malformed, while never calculating from those records.
+            return completed_attempts[0], None
         scores = {
             "programming": attempt.programming_score,
             "logical_reasoning": attempt.logical_reasoning_score,
@@ -426,6 +437,8 @@ def create_app(test_config=None):
         attempt = owned_attempt(attempt_id)
         if attempt.status != "completed":
             return redirect(url_for("assessment_question", attempt_id=attempt.id, position=1))
+        if not valid_completed_assessment(attempt):
+            return render_template("assessment/results.html", attempt=attempt, data_issue=True)
         scores = {
             "programming": attempt.programming_score,
             "logical_reasoning": attempt.logical_reasoning_score,

@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy import select
@@ -44,6 +45,11 @@ def register(client, name="Ada Lovelace", email="ada@example.com"):
         },
         follow_redirects=False,
     )
+
+
+def account_id(client):
+    with client.session_transaction() as browser_session:
+        return browser_session["user_id"]
 
 
 def start_attempt(client):
@@ -166,6 +172,31 @@ def test_attempts_and_results_are_private_to_their_owner(client, app):
 
     assert other_client.get(f"/assessment/{attempt_id}/question/1").status_code == 404
     assert other_client.get(f"/assessment/{attempt_id}/results").status_code == 404
+
+
+def test_results_handles_malformed_completed_attempt_without_error(client, app):
+    register(client)
+    with app.app_context():
+        db_session = app.extensions["db_session"]
+        attempt = AssessmentAttempt(
+            user_id=account_id(client),
+            status="completed",
+            programming_score=None,
+            logical_reasoning_score=67,
+            problem_solving_score=67,
+            analytical_thinking_score=67,
+            overall_score=67,
+            completed_at=datetime.now(timezone.utc),
+        )
+        db_session.add(attempt)
+        db_session.commit()
+        attempt_id = attempt.id
+
+    response = client.get(f"/assessment/{attempt_id}/results")
+    assert response.status_code == 200
+    assert b"Assessment data is unavailable." in response.data
+    assert b"Overall objective score:" not in response.data
+    assert b"Start a new attempt" in response.data
 
 
 def test_assessment_requires_login_and_valid_csrf(client):
